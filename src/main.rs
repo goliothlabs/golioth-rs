@@ -4,21 +4,20 @@
 
 extern crate alloc;
 
-use nrfxlib::{modem, tcp, tls, at};
-use nrf9160_hal::pac::{NVIC, interrupt, Interrupt, CorePeripherals};
-use core::{str, fmt::Write as _};
-use serde::Deserialize;
 use defmt::Format;
+use nrf9160_hal::pac::{interrupt, CorePeripherals, Interrupt, NVIC};
+use nrfxlib::modem;
+use serde::Deserialize;
 
-use tinyrlibc as _;
 use defmt_rtt as _; // global logger
 use panic_probe as _;
+use tinyrlibc as _;
 
 mod config;
-mod heap;
-mod utils;
 mod golioth;
+mod heap;
 mod keys;
+mod utils;
 
 #[interrupt]
 fn EGU1() {
@@ -57,8 +56,8 @@ fn main() -> ! {
 
     // Workaround for https://infocenter.nordicsemi.com/index.jsp?topic=%2Ferrata_nRF9160_EngA%2FERR%2FnRF9160%2FEngineeringA%2Flatest%2Fanomaly_160_17.html
     unsafe {
-		core::ptr::write_volatile(0x4000_5C04 as *mut u32, 0x02);
-	}
+        core::ptr::write_volatile(0x4000_5C04 as *mut u32, 0x02);
+    }
 
     defmt::info!("initializing nrfxlib");
 
@@ -66,7 +65,7 @@ fn main() -> ! {
     modem::flight_mode().unwrap();
 
     keys::install_psk_and_psk_id(config::SECURITY_TAG, config::PSK_ID, config::PSK);
-    
+
     modem::on().unwrap();
 
     defmt::info!("connecting to lte");
@@ -91,5 +90,3 @@ fn main() -> ! {
 
     utils::exit()
 }
-
-

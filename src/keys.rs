@@ -1,6 +1,6 @@
 use alloc::{format, string::String};
-use defmt::{panic, Format, Debug2Format};
-use nrfxlib::{AtError, Error as NrfError, at::{self, AtSocket}};
+use defmt::{panic, Format};
+use nrfxlib::{at::AtSocket, AtError, Error as NrfError};
 
 #[derive(Clone, Copy, Format)]
 #[allow(dead_code)]
@@ -17,9 +17,9 @@ fn with_cme<R>(f: impl FnOnce(&mut AtSocket) -> Result<R, NrfError>) -> Result<R
     let mut sock = AtSocket::new()?;
     sock.send_command("AT+CMEE=1\r\n")?;
     sock.poll_response(|_| {})?;
-    
+
     let ret = f(&mut sock)?;
-    
+
     sock.send_command("AT+CMEE=1\r\n")?;
     sock.poll_response(|_| {})?;
 
@@ -40,7 +40,12 @@ fn key_delete(tag: u32, ty: Type) -> Result<(), NrfError> {
 
 fn key_write(tag: u32, ty: Type, data: &str) -> Result<(), NrfError> {
     with_cme(|sock| {
-        let cmd = format!("AT%CMNG=0,{tag},{ty},\"{data}\"\r\n", tag = tag, ty = ty as u32, data = data);
+        let cmd = format!(
+            "AT%CMNG=0,{tag},{ty},\"{data}\"\r\n",
+            tag = tag,
+            ty = ty as u32,
+            data = data
+        );
 
         sock.send_command(&cmd)?;
         sock.poll_response(|_| {})
@@ -48,7 +53,10 @@ fn key_write(tag: u32, ty: Type, data: &str) -> Result<(), NrfError> {
 }
 
 pub fn install_psk_and_psk_id(security_tag: u32, psk_id: &str, psk: &[u8]) {
-    assert!(!psk_id.is_empty() && !psk.is_empty(), "PSK ID and PSK must not be empty. Set them in the `config` module.");
+    assert!(
+        !psk_id.is_empty() && !psk.is_empty(),
+        "PSK ID and PSK must not be empty. Set them in the `config` module."
+    );
 
     key_delete(security_tag, Type::PskId).unwrap();
     key_delete(security_tag, Type::Psk).unwrap();

@@ -1,4 +1,3 @@
-
 pub const GOLIOTH_SERVER_URL: &str = "coap.golioth.dev";
 pub const GOLIOTH_SERVER_PORT: u16 = 5684;
 

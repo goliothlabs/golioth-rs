@@ -1,9 +1,8 @@
-use coap_lite::{CoapRequest, Packet, RequestType, ContentFormat, error::MessageError};
-use nrfxlib::{dtls::{DtlsSocket, PeerVerification, Version}};
-use defmt::Debug2Format;
-use serde::de::DeserializeOwned;
-use core::str;
 use alloc::{format, vec::Vec};
+use coap_lite::{error::MessageError, CoapRequest, ContentFormat, Packet, RequestType};
+use core::str;
+use nrfxlib::dtls::{DtlsSocket, PeerVerification, Version};
+use serde::de::DeserializeOwned;
 
 use crate::config;
 
@@ -46,9 +45,7 @@ impl Golioth {
 
         socket.connect(config::GOLIOTH_SERVER_URL, config::GOLIOTH_SERVER_PORT)?;
 
-        Ok(Self {
-            socket,
-        })
+        Ok(Self { socket })
     }
 
     #[inline]
@@ -74,7 +71,9 @@ impl Golioth {
 
         request.set_method(RequestType::Get);
         request.set_path(&format!(".d/{}", path));
-        request.message.set_content_format(ContentFormat::ApplicationJSON);
+        request
+            .message
+            .set_content_format(ContentFormat::ApplicationJSON);
 
         let resp = self.make_request_and_recv(&request.message.to_bytes()?)?;
 
