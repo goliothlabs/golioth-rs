@@ -4,10 +4,11 @@
 
 extern crate alloc;
 
+use cortex_m::prelude::_embedded_hal_blocking_delay_DelayMs as DelayMs;
 use defmt::Format;
-use nrf9160_hal::pac::{interrupt, CorePeripherals, Interrupt, NVIC};
+use nrf9160_hal::{Delay, pac::{interrupt, CorePeripherals, Interrupt, NVIC}};
 use nrfxlib::modem;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use defmt_rtt as _; // global logger
 use panic_probe as _;
@@ -59,6 +60,8 @@ fn main() -> ! {
         core::ptr::write_volatile(0x4000_5C04 as *mut u32, 0x02);
     }
 
+    let mut delay = Delay::new(core.SYST);
+
     defmt::info!("initializing nrfxlib");
 
     nrfxlib::init().unwrap();
@@ -74,7 +77,13 @@ fn main() -> ! {
 
     defmt::info!("connecting to Golioth");
 
-    let mut golioth = golioth::Golioth::new().unwrap();
+    run(&mut delay).unwrap();
+
+    utils::exit()
+}
+
+fn run(delay: &mut impl DelayMs<u32>) -> Result<(), golioth::Error> {
+    let mut golioth = golioth::Golioth::new()?;
 
     #[derive(Format, Deserialize)]
     struct Leds {
@@ -82,11 +91,21 @@ fn main() -> ! {
         led0: bool,
     }
 
-    // This is not a compliant CoAP implementation, so it won't
-    // really work if you try to get multiple paths.
-    let leds: Leds = golioth.lightdb_get("led").unwrap();
+    let leds: Leds = golioth.lightdb_get("led")?;
 
     defmt::info!("leds: {:?}", leds);
 
-    utils::exit()
+    #[derive(Serialize)]
+    struct Counter {
+        i: usize,
+    }
+
+    for i in 0.. {
+        defmt::info!("writing to /counter");
+        golioth.lightdb_set("counter", Counter { i })?;
+
+        delay.delay_ms(5_000);
+    }
+
+    Ok(())
 }

@@ -1,8 +1,11 @@
 use alloc::{format, vec::Vec};
-use coap_lite::{error::MessageError, CoapRequest, ContentFormat, Packet, RequestType};
-use core::str;
+use coap_lite::{CoapRequest, ContentFormat, Packet, RequestType, error::MessageError};
+use core::{str, sync::atomic::{AtomicU16, Ordering}};
 use nrfxlib::dtls::{DtlsSocket, PeerVerification, Version};
-use serde::de::DeserializeOwned;
+use serde::{
+    de::DeserializeOwned,
+    Serialize,
+};
 
 use crate::config;
 
@@ -30,6 +33,8 @@ impl From<serde_json::error::Error> for Error {
         Self::Json(e)
     }
 }
+
+static MESSAGE_ID_COUNTER: AtomicU16 = AtomicU16::new(0);
 
 pub struct Golioth {
     socket: DtlsSocket,
@@ -69,6 +74,7 @@ impl Golioth {
     fn lightdb_get_raw(&mut self, path: &str) -> Result<Vec<u8>, Error> {
         let mut request: CoapRequest<()> = CoapRequest::new();
 
+        request.message.header.message_id = MESSAGE_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
         request.set_method(RequestType::Get);
         request.set_path(&format!(".d/{}", path));
         request
@@ -86,5 +92,21 @@ impl Golioth {
         let payload = self.lightdb_get_raw(path)?;
 
         Ok(serde_json::from_slice(&payload)?)
+    }
+
+    pub fn lightdb_set<T: Serialize>(&mut self, path: &str, v: T) -> Result<(), Error> {
+        let mut request: CoapRequest<()> = CoapRequest::new();
+
+        request.message.header.message_id = MESSAGE_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
+        request.set_method(RequestType::Post);
+        request.set_path(&format!(".d/{}", path));
+        request
+            .message
+            .set_content_format(ContentFormat::ApplicationJSON);
+        request.message.payload = serde_json::to_vec(&v)?;
+
+        self.socket.write(&request.message.to_bytes()?)?;
+
+        Ok(())
     }
 }
