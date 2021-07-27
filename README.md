@@ -2,9 +2,21 @@
 
 An experimental project for using Golioth (currently just) on the nRF9160.
 
-The CoAP implementation that this uses is not compliant (it's not even a CoAP implementation, just a CoAP parser).
+This project is currently in a holding pattern until the Embedded Rust ecosystem has caught up to the necessary networking support.
 
-I'm looking into switching to the [rust-async-coap](https://github.com/google/rust-async-coap) crate.
+# What's needed before resurrection? 
+
+Before this project can be revived, two things are necessary:
+
+1. Rust Embedded needs better networking support. This means that the `AsyncRead` and `AsyncWrite` traits
+should be either accessible on `#![no_std]` in a widely-used crate or that they should be stabilized in `core`.
+
+    1.1. This also means that the `nrfxlib` crate should be accessible with `AsyncRead` and `AsyncWrite`.
+
+2. There should be a Rust DTLS implementation that supports `#![no_std]` and PSK authentication usable through `AsyncRead` and `AsyncWrite`. This could be written in Rust (e.g. `drogue-iot`) or bound (e.g. `mbedtls`).
+
+When these critera are met, the `Golioth` struct in this crate should be modified to be generic on an `AsyncRead + AsyncWrite` type, which should be passed into the `Golioth::new` function. The issue here is that we can't confirm that the tunnel is being sent over DTLS: maybe there's a different design
+that's better?
 
 # Setup
 
