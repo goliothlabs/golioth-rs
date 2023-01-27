@@ -1,25 +1,41 @@
+#![no_main]
+#![no_std]
+#![feature(alloc_error_handler)]
+
+use defmt_rtt as _; // global logger
+use panic_probe as _;
+use tinyrlibc as _;
+
+pub mod config;
+pub mod heap;
+pub mod keys;
+pub mod utils;
+
 use alloc::{format, vec::Vec};
-use coap_lite::{CoapRequest, ContentFormat, Packet, RequestType, error::MessageError};
-use core::{str, sync::atomic::{AtomicU16, Ordering}};
-use nrfxlib::dtls::{DtlsSocket, PeerVerification, Version};
-use serde::{
-    de::DeserializeOwned,
-    Serialize,
+use at_commands::parser::ParseError;
+use coap_lite::{error::MessageError, CoapRequest, ContentFormat, Packet, RequestType};
+use core::{
+    str,
+    sync::atomic::{AtomicU16, Ordering},
 };
+use embassy_time::TimeoutError;
+use nrf_modem::{DtlsSocket, PeerVerification};
+use serde::{de::DeserializeOwned, Serialize};
 
-use crate::config;
+/// Once flashed, comment this out along with the SPM entry in memory.x to eliminate flashing the SPM
+/// more than once, and will speed up subsequent builds.  Or leave it and flash it every time
+#[link_section = ".spm"]
+#[used]
+static SPM: [u8; 24052] = *include_bytes!("zephyr.bin");
 
+/// Crate error types
 #[derive(Debug)]
 pub enum Error {
-    Nrf(nrfxlib::Error),
     Coap(MessageError),
     Json(serde_json::error::Error),
-}
-
-impl From<nrfxlib::Error> for Error {
-    fn from(e: nrfxlib::Error) -> Self {
-        Self::Nrf(e)
-    }
+    NrfModem(nrf_modem::Error),
+    Timeout(TimeoutError),
+    ParseError(ParseError),
 }
 
 impl From<MessageError> for Error {
@@ -31,6 +47,24 @@ impl From<MessageError> for Error {
 impl From<serde_json::error::Error> for Error {
     fn from(e: serde_json::error::Error) -> Self {
         Self::Json(e)
+    }
+}
+
+impl From<nrf_modem::Error> for Error {
+    fn from(e: nrf_modem::Error) -> Self {
+        Self::NrfModem(e)
+    }
+}
+
+impl From<TimeoutError> for Error {
+    fn from(e: TimeoutError) -> Self {
+        Self::Timeout(e)
+    }
+}
+
+impl From<ParseError> for Error {
+    fn from(e: ParseError) -> Self {
+        Self::ParseError(e)
     }
 }
 

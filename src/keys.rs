@@ -1,10 +1,13 @@
-use alloc::{format, string::String};
-use defmt::{panic, Format};
-use nrfxlib::{at::AtSocket, AtError, Error as NrfError};
+use crate::config::{PSK, PSK_ID, SECURITY_TAG};
+use crate::Error;
+use core::fmt::write;
+use defmt::Format;
+use heapless::String;
 
+/// Credential Storage Management Types
 #[derive(Clone, Copy, Format)]
 #[allow(dead_code)]
-enum Type {
+enum CSMType {
     RootCert = 0,
     ClientCert = 1,
     ClientPrivateKey = 2,
@@ -13,59 +16,49 @@ enum Type {
     // ...
 }
 
-fn with_cme<R>(f: impl FnOnce(&mut AtSocket) -> Result<R, NrfError>) -> Result<R, NrfError> {
-    let mut sock = AtSocket::new()?;
-    sock.send_command("AT+CMEE=1\r\n")?;
-    sock.poll_response(|_| {})?;
-
-    let ret = f(&mut sock)?;
-
-    sock.send_command("AT+CMEE=1\r\n")?;
-    sock.poll_response(|_| {})?;
-
-    Ok(ret)
+/// This function deletes a key or certificate from the nrf modem
+async fn key_delete(ty: CSMType) -> Result<(), Error> {
+    let mut cmd: String<32> = String::new();
+    write(
+        &mut cmd,
+        format_args!("AT%CMNG=3,{},{}", SECURITY_TAG, ty as u32),
+    )
+    .unwrap();
+    nrf_modem::send_at::<32>(cmd.as_str()).await?;
+    Ok(())
 }
 
-fn key_delete(tag: u32, ty: Type) -> Result<(), NrfError> {
-    with_cme(|sock| {
-        let cmd = format!("AT%CMNG=3,{tag},{ty}\r\n", tag = tag, ty = ty as u32);
+/// This function writes a key or certificate to the nrf modem
+async fn key_write(ty: CSMType, data: &str) -> Result<(), Error> {
+    let mut cmd: String<128> = String::new();
+    write(
+        &mut cmd,
+        format_args!(r#"AT%CMNG=0,{},{},"{}""#, SECURITY_TAG, ty as u32, data),
+    )
+    .unwrap();
 
-        sock.send_command(&cmd)?;
-        match sock.poll_response(|_| {}) {
-            Ok(_) | Err(NrfError::AtError(AtError::CmeError(513))) => Ok(()), // 513 is not found
-            e @ Err(_) => e,
-        }
-    })
+    nrf_modem::send_at::<128>(&cmd.as_str()).await?;
+
+    Ok(())
 }
 
-fn key_write(tag: u32, ty: Type, data: &str) -> Result<(), NrfError> {
-    with_cme(|sock| {
-        let cmd = format!(
-            "AT%CMNG=0,{tag},{ty},\"{data}\"\r\n",
-            tag = tag,
-            ty = ty as u32,
-            data = data
-        );
-
-        sock.send_command(&cmd)?;
-        sock.poll_response(|_| {})
-    })
-}
-
-pub fn install_psk_and_psk_id(security_tag: u32, psk_id: &str, psk: &[u8]) {
+/// Delete existing keys/certificates and loads new ones based on config.rs entries
+pub async fn install_psk_id_and_psk() -> Result<(), Error> {
     assert!(
-        !psk_id.is_empty() && !psk.is_empty(),
+        !&PSK_ID.is_empty() && !&PSK.is_empty(),
         "PSK ID and PSK must not be empty. Set them in the `config` module."
     );
 
-    key_delete(security_tag, Type::PskId).unwrap();
-    key_delete(security_tag, Type::Psk).unwrap();
+    key_delete(CSMType::PskId).await?;
+    key_delete(CSMType::Psk).await?;
 
-    key_write(security_tag, Type::PskId, psk_id).unwrap();
-    key_write(security_tag, Type::Psk, &encode_psk_as_hex(psk)).unwrap();
+    key_write(CSMType::PskId, &PSK_ID).await?;
+    key_write(CSMType::Psk, &encode_psk_as_hex(&PSK)).await?;
+
+    Ok(())
 }
 
-fn encode_psk_as_hex(psk: &[u8]) -> String {
+fn encode_psk_as_hex(psk: &[u8]) -> String<128> {
     fn hex_from_digit(num: u8) -> char {
         if num < 10 {
             (b'0' + num) as char
@@ -74,10 +67,10 @@ fn encode_psk_as_hex(psk: &[u8]) -> String {
         }
     }
 
-    let mut s = String::with_capacity(psk.len() * 2);
+    let mut s: String<128> = String::new();
     for ch in psk {
-        s.push(hex_from_digit(ch / 16));
-        s.push(hex_from_digit(ch % 16));
+        s.push(hex_from_digit(ch / 16)).unwrap();
+        s.push(hex_from_digit(ch % 16)).unwrap();
     }
 
     s
