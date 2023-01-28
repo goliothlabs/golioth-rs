@@ -6,12 +6,11 @@ extern crate alloc;
 
 use defmt::{error, info, unwrap};
 use embassy_executor::Spawner;
-use embassy_nrf::gpio::{Flex, Level, Output, OutputDrive};
 use embassy_nrf::interrupt::{self, InterruptExt, Priority};
-use embassy_time::{with_timeout, Duration, Ticker, Timer};
+use embassy_time::{Duration, Timer};
 use golioth_rs::*;
 use nrf_modem::{ConnectionPreference, SystemMode};
-use serde::{Deserialize, Serialize};
+// use serde::{Deserialize, Serialize};
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
@@ -32,11 +31,6 @@ async fn main(_spawner: Spawner) {
     });
     ipc.enable();
 
-    // Workaround for https://infocenter.nordicsemi.com/index.jsp?topic=%2Ferrata_nRF9160_EngA%2FERR%2FnRF9160%2FEngineeringA%2Flatest%2Fanomaly_160_17.html
-    unsafe {
-        core::ptr::write_volatile(0x4000_5C04 as *mut u32, 0x02);
-    }
-
     // Initialize heap data
     heap::init();
 
@@ -46,28 +40,29 @@ async fn main(_spawner: Spawner) {
         Err(e) => {
             // If we get here, we have problems
             error!("app exited: {:?}", defmt::Debug2Format(&e));
-            utils::exit();
         }
     }
+    // Exit application
+    utils::exit();
 }
 
 async fn run() -> Result<(), Error> {
     // Handle for device peripherals
-    let mut p = embassy_nrf::init(Default::default());
+    // let mut p = embassy_nrf::init(Default::default());
 
     // Initialize cellular modem
     unwrap!(
         nrf_modem::init(SystemMode {
             lte_support: true,
             lte_psm_support: true,
-            nbiot_support: true,
+            nbiot_support: false,
             gnss_support: false,
             preference: ConnectionPreference::Lte,
         })
         .await
     );
 
-    keys::install_psk_id_and_psk();
+    keys::install_psk_id_and_psk().await?;
 
     // let mut ticker = Ticker::every(Duration::from_secs(3));
 

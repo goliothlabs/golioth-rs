@@ -1,16 +1,17 @@
 [package]
 # TODO(1) fix `authors` and `name` if you didn't use `cargo-generate`
-authors = ["Lachlan Sneff <lachlan.sneff@gmail.com>", "Daniel Hayes <dkhayes117@annealed-engineering.com>"]
+authors = ["Daniel Hayes <dkhayes117@annealed-engineering.com>"]
 name = "golioth-rs"
 edition = "2021"
 version = "0.2.0"
 resolver = "2"
 
 [dependencies]
+alloc-cortex-m = "0.4.4"
 at-commands = "0.5.2"
+coap-lite = { version = "0.11.2", default-features = false }
 cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7.2"
-alloc-cortex-m = "0.4.4"
 defmt = "0.3.2"
 defmt-rtt = "0.4.0"
 embassy-futures = { version = "0.1.0"}
@@ -18,21 +19,16 @@ embassy-sync = { version = "0.1.0", features = ["defmt"] }
 embassy-executor = { version = "0.1.1", features = ["defmt", "integrated-timers"] }
 embassy-time = { version = "0.1.0", features = ["defmt", "defmt-timestamp-uptime"] }
 embassy-nrf = { version = "0", features = ["nightly", "nrf9160-ns", "unstable-pac", "time-driver-rtc1", "defmt", "unstable-traits", "time", "gpiote"] }
+heapless = { version = "0.7.16" }
+nrf-modem = { version = "0.2", features = ["defmt"] }
 panic-probe = { version = "0.3.0", features = ["print-defmt"] }
-nrf-modem = { version = "0.1", features = ["defmt"] }
-tinyrlibc = "0.2.2"
-coap-lite = { version = "0.11.2", default-features = false }
-heapless = "0.7.16"
-serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+tinyrlibc = { git = "https://github.com/rust-embedded-community/tinyrlibc.git" }
 
 [features]
 # set logging levels here
-default = [
-  "defmt-default",
-  "nightly"
-  # "dependency-a/defmt-trace",
-]
+default = ["nightly"]
 
 # do NOT modify these features
 defmt-default = []
