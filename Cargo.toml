@@ -24,6 +24,7 @@ nrf-modem = { version = "0.2", features = ["defmt"] }
 panic-probe = { version = "0.3.0", features = ["print-defmt"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+#serde-json-core = { version = "0.5.0" }
 tinyrlibc = { git = "https://github.com/rust-embedded-community/tinyrlibc.git" }
 
 [features]
