@@ -1,4 +1,4 @@
-use core::sync::atomic::{AtomicUsize, Ordering};
+// use core::sync::atomic::{AtomicUsize, Ordering};
 // use embassy_time::Instant;
 
 // same panicking *behavior* as `panic-probe` but doesn't print a panic message

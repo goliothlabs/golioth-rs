@@ -17,16 +17,12 @@ pub mod utils;
 
 use crate::config::{GOLIOTH_SERVER_PORT, GOLIOTH_SERVER_URL, SECURITY_TAG};
 use coap_lite::{error::MessageError, CoapRequest, ContentFormat, Packet, RequestType};
-use core::{
-    str,
-    sync::atomic::{AtomicU16, Ordering},
-};
+use core::{str};
 use defmt::info;
 use nrf_modem::{DtlsSocket, PeerVerification};
 use serde::de::DeserializeOwned;
-use serde::{ser, Serialize};
+use serde::{Serialize};
 
-// use serde::{de::DeserializeOwned, Serialize};
 
 /// Once flashed, comment this out along with the SPM entry in memory.x to eliminate flashing the SPM
 /// more than once, and will speed up subsequent builds.  Or leave it and flash it every time
@@ -75,7 +71,8 @@ impl From<at_commands::parser::ParseError> for Error {
 }
 
 // Enum for light_db write types
-pub enum LightDBType {
+#[derive(Debug)]
+pub enum LightDBWriteType {
     State,
     Stream,
 }
@@ -145,7 +142,7 @@ impl Golioth {
 
     pub async fn lightdb_write<T: Serialize>(
         &mut self,
-        db_type: LightDBType,
+        write_type: LightDBWriteType,
         path: &str,
         v: T,
     ) -> Result<(), Error> {
@@ -154,11 +151,11 @@ impl Golioth {
         // request.message.header.message_id = MESSAGE_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
         request.set_method(RequestType::Post);
 
-        let formatted_path = match db_type {
-            LightDBType::State => {
+        let formatted_path = match write_type {
+            LightDBWriteType::State => {
                 format!(".d/{}", path)
             }
-            LightDBType::Stream => {
+            LightDBWriteType::Stream => {
                 format!(".s/{}", path)
             }
         };

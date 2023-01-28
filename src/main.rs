@@ -4,13 +4,14 @@
 
 extern crate alloc;
 
-use defmt::{error, info, unwrap};
+use defmt::{error, Format, info, unwrap};
 use embassy_executor::Spawner;
 use embassy_nrf::interrupt::{self, InterruptExt, Priority};
-use embassy_time::{Duration, Timer};
 use golioth_rs::*;
 use nrf_modem::{ConnectionPreference, SystemMode};
-// use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
+use golioth_rs::config::LOCATION;
+use golioth_rs::LightDBWriteType::Stream;
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
@@ -50,6 +51,13 @@ async fn run() -> Result<(), Error> {
     // Handle for device peripherals
     // let mut p = embassy_nrf::init(Default::default());
 
+    // Stucture to hold sensor data: temperature in F, battery level in mV
+    #[derive(Format, Serialize, Deserialize)]
+    struct TempSensor {
+        temp: f32,
+        battery: u32,
+    }
+
     // Initialize cellular modem
     unwrap!(
         nrf_modem::init(SystemMode {
@@ -62,46 +70,23 @@ async fn run() -> Result<(), Error> {
         .await
     );
 
+    // Place PSK authentication items in modem for DTLS
     keys::install_psk_id_and_psk().await?;
 
-    // let mut ticker = Ticker::every(Duration::from_secs(3));
+    // Structure holding our DTLS socket to Golioth Cloud
+    info!("Creating DTLS Socket to golioth.io");
+    let mut golioth = Golioth::new().await?;
 
-    Timer::after(Duration::from_micros(500)).await;
+    let mut sensor = TempSensor { temp: 0.0, battery: 0 };
 
-    info!("Send payload here");
+    // Simulate device sensor/adc measurements
+    info!("Simulating sensor measurements");
+    sensor.temp = 67.5;
+    sensor.battery = 3300;
 
-    // ticker.next().await; // wait for next tick event
-
-    Ok(())
-}
-
-/*
-
-fn run(delay: &mut impl DelayMs<u32>) -> Result<(), golioth::Error> {
-    let mut golioth = golioth::Golioth::new()?;
-
-    #[derive(Format, Deserialize)]
-    struct Leds {
-        #[serde(rename(deserialize = "0"))]
-        led0: bool,
-    }
-
-    let leds: Leds = golioth.lightdb_get("led")?;
-
-    defmt::info!("leds: {:?}", leds);
-
-    #[derive(Serialize)]
-    struct Counter {
-        i: usize,
-    }
-
-    for i in 0.. {
-        defmt::info!("writing to /counter");
-        golioth.lightdb_set("counter", Counter { i })?;
-
-        delay.delay_ms(5_000);
-    }
+    // Send our data to the cloud
+    info!("Sending payload");
+    golioth.lightdb_write(Stream, LOCATION, &sensor).await?;
 
     Ok(())
 }
- */
