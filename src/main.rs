@@ -2,20 +2,20 @@
 #![no_main]
 #![feature(type_alias_impl_trait)]
 
-extern crate alloc;
-
 use defmt::{error, Format, info, unwrap};
 use embassy_executor::Spawner;
+// use embassy_nrf::gpio::{Level, Output, OutputDrive};
 use embassy_nrf::interrupt::{self, InterruptExt, Priority};
-use golioth_rs::*;
 use nrf_modem::{ConnectionPreference, SystemMode};
 use serde::{Serialize, Deserialize};
 use golioth_rs::config::LOCATION;
-use golioth_rs::LightDBWriteType::Stream;
+use golioth_rs::LightDBWriteType::{State, Stream};
+use golioth_rs::*;
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
     // Set up the interrupts for the modem
+    info!("Setting up interrupts");
     let egu1 = interrupt::take!(EGU1);
     egu1.set_priority(Priority::P4);
     egu1.set_handler(|_| {
@@ -33,6 +33,7 @@ async fn main(_spawner: Spawner) {
     ipc.enable();
 
     // Initialize heap data
+    info!("Initialize heap");
     heap::init();
 
     // Run our sampling program, will not return unless an error occurs
@@ -48,14 +49,22 @@ async fn main(_spawner: Spawner) {
 }
 
 async fn run() -> Result<(), Error> {
+    info!("starting application");
     // Handle for device peripherals
     // let mut p = embassy_nrf::init(Default::default());
+    // let mut led = Output::new(p.P0_03, Level::High, OutputDrive::Standard);
 
     // Stucture to hold sensor data: temperature in F, battery level in mV
     #[derive(Format, Serialize, Deserialize)]
     struct TempSensor {
         temp: f32,
         battery: u32,
+    }
+
+    // Stucture to hold sensor data: temperature in F, battery level in mV
+    #[derive(Format, Serialize, Deserialize)]
+    struct LED {
+        state: bool,
     }
 
     // Initialize cellular modem
@@ -71,6 +80,7 @@ async fn run() -> Result<(), Error> {
     );
 
     // Place PSK authentication items in modem for DTLS
+    info!("Uploading PSK ID and Key");
     keys::install_psk_id_and_psk().await?;
 
     // Structure holding our DTLS socket to Golioth Cloud
@@ -84,9 +94,14 @@ async fn run() -> Result<(), Error> {
     sensor.temp = 67.5;
     sensor.battery = 3300;
 
-    // Send our data to the cloud
+    // Record data to LightDB Stream
     info!("Sending payload");
     golioth.lightdb_write(Stream, LOCATION, &sensor).await?;
+
+    let led = LED { state: false };
+
+    // Use LightDB State to record the current state of an LED
+    golioth.lightdb_write(State, LOCATION, &led).await?;
 
     Ok(())
 }

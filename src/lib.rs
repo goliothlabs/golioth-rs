@@ -3,22 +3,21 @@
 #![feature(alloc_error_handler)]
 
 extern crate alloc;
-
-use alloc::format;
-use alloc::vec::Vec;
-use defmt_rtt as _; // global logger
-use panic_probe as _;
-use tinyrlibc as _;
+extern crate tinyrlibc;
 
 pub mod config;
 pub mod heap;
 pub mod keys;
 pub mod utils;
 
+use alloc::format;
+use alloc::vec::Vec;
+use defmt_rtt as _; // global logger
+use panic_probe as _;
 use crate::config::{GOLIOTH_SERVER_PORT, GOLIOTH_SERVER_URL, SECURITY_TAG};
 use coap_lite::{error::MessageError, CoapRequest, ContentFormat, Packet, RequestType};
 use core::{str};
-use defmt::info;
+use defmt::{debug};
 use nrf_modem::{DtlsSocket, PeerVerification};
 use serde::de::DeserializeOwned;
 use serde::{Serialize};
@@ -26,9 +25,9 @@ use serde::{Serialize};
 
 /// Once flashed, comment this out along with the SPM entry in memory.x to eliminate flashing the SPM
 /// more than once, and will speed up subsequent builds.  Or leave it and flash it every time
-#[link_section = ".spm"]
-#[used]
-static SPM: [u8; 24052] = *include_bytes!("zephyr.bin");
+// #[link_section = ".spm"]
+// #[used]
+// static SPM: [u8; 24052] = *include_bytes!("zephyr.bin");
 
 /// Crate error types
 #[derive(Debug)]
@@ -93,7 +92,7 @@ impl Golioth {
         )
         .await?;
 
-        info!("DTLS Socket connected");
+        debug!("DTLS Socket created");
 
         Ok(Self { socket })
     }
@@ -106,7 +105,7 @@ impl Golioth {
 
         let (response, _src_addr) = self.socket.receive_from(&mut buf[..]).await?;
 
-        info!("{}", response);
+        debug!("{}", response);
         let n = response.len();
 
         buf.truncate(n);
@@ -159,14 +158,15 @@ impl Golioth {
                 format!(".s/{}", path)
             }
         };
+        debug!("set lighdb path: {}", &formatted_path.as_str());
 
-        request.set_path(&formatted_path);
+        request.set_path(&formatted_path.as_str());
 
         request
             .message
             .set_content_format(ContentFormat::ApplicationJSON);
         request.message.payload = serde_json::to_vec(&v)?;
-
+        debug!("sending bytes");
         self.socket.send(&request.message.to_bytes()?).await?;
 
         Ok(())
