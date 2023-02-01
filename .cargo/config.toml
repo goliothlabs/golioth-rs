@@ -24,6 +24,10 @@ DEFMT_LOG = "debug"
 # target = "thumbv7em-none-eabihf" # Cortex-M4F and Cortex-M7F (with FPU)
 target = "thumbv8m.main-none-eabihf" # Cortex-M33 (with FPU)
 
-# [alias]
-# rb = "run --bin"
-# rrb = "run --release --bin"
+[alias]
+b = "build --bin"
+brb = "build --release --bin"
+rb = "run --bin"
+rrb = "run --release --bin"
+s = "size --bin app -- -B -x"
+sr = "size --release --bin app -- -B -x"

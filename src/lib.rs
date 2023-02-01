@@ -11,7 +11,7 @@ pub mod keys;
 pub mod utils;
 
 use alloc::format;
-use alloc::vec::Vec;
+// use alloc::vec::Vec;
 use defmt_rtt as _; // global logger
 use panic_probe as _;
 use crate::config::{GOLIOTH_SERVER_PORT, GOLIOTH_SERVER_URL, SECURITY_TAG};
@@ -113,7 +113,27 @@ impl Golioth {
         Ok(buf)
     }
 
-    async fn lightdb_read_raw(&mut self, path: &str) -> Result<Vec<u8>, Error> {
+    // async fn lightdb_read_raw(&mut self, path: &str) -> Result<Vec<u8>, Error> {
+    //     let mut request: CoapRequest<DtlsSocket> = CoapRequest::new();
+    //
+    //     // request.message.header.message_id = MESSAGE_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
+    //     request.set_method(RequestType::Get);
+    //     request.set_path(&format!(".d/{}", path));
+    //     request
+    //         .message
+    //         .set_content_format(ContentFormat::ApplicationJSON);
+    //
+    //     let resp = self.request_and_recv(&request.message.to_bytes()?).await?;
+    //
+    //     let packet = Packet::from_bytes(&resp)?;
+    //
+    //     Ok(packet.payload)
+    // }
+
+    pub async fn lightdb_read_state<T: DeserializeOwned>(
+        &mut self,
+        path: &str,
+    ) -> Result<T, Error> {
         let mut request: CoapRequest<DtlsSocket> = CoapRequest::new();
 
         // request.message.header.message_id = MESSAGE_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
@@ -124,19 +144,8 @@ impl Golioth {
             .set_content_format(ContentFormat::ApplicationJSON);
 
         let resp = self.request_and_recv(&request.message.to_bytes()?).await?;
-
         let packet = Packet::from_bytes(&resp)?;
-
-        Ok(packet.payload)
-    }
-
-    pub async fn lightdb_read_state<T: DeserializeOwned>(
-        &mut self,
-        path: &str,
-    ) -> Result<T, Error> {
-        let payload = self.lightdb_read_raw(path).await?;
-
-        Ok(serde_json::from_slice(&payload)?)
+        Ok(serde_json::from_slice(&packet.payload)?)
     }
 
     pub async fn lightdb_write<T: Serialize>(

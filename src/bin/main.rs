@@ -6,9 +6,9 @@ use defmt::{error, Format, info, unwrap};
 use embassy_executor::Spawner;
 // use embassy_nrf::gpio::{Level, Output, OutputDrive};
 use embassy_nrf::interrupt::{self, InterruptExt, Priority};
+use embassy_time::{Timer, Duration};
 use nrf_modem::{ConnectionPreference, SystemMode};
 use serde::{Serialize, Deserialize};
-use golioth_rs::config::LOCATION;
 use golioth_rs::LightDBWriteType::{State, Stream};
 use golioth_rs::*;
 
@@ -94,14 +94,25 @@ async fn run() -> Result<(), Error> {
     sensor.temp = 67.5;
     sensor.battery = 3300;
 
-    // Record data to LightDB Stream
-    info!("Sending payload");
-    golioth.lightdb_write(Stream, LOCATION, &sensor).await?;
+    let mut led = LED { state: false };
 
-    let led = LED { state: false };
+    led.state = true;
 
     // Use LightDB State to record the current state of an LED
-    golioth.lightdb_write(State, LOCATION, &led).await?;
+    golioth.lightdb_write(State, "Greenhouse_1/led", &led).await?;
+
+    // 500ms delay
+    Timer::after(Duration::from_millis(500)).await;
+
+    // Record data to LightDB Stream
+    info!("Sending payload");
+    golioth.lightdb_write(Stream, "Greenhouse_1", &sensor).await?;
+
+    // 500ms delay
+    Timer::after(Duration::from_millis(500)).await;
+    
+    let digital_twin = golioth.lightdb_read_state("Greenhouse_1/led").await?;
+    info!("state read: {}", &digital_twin);
 
     Ok(())
 }
