@@ -2,15 +2,15 @@
 #![no_main]
 #![feature(type_alias_impl_trait)]
 
-use defmt::{error, Format, info, unwrap};
+use defmt::{error, info, unwrap, Format};
 use embassy_executor::Spawner;
 // use embassy_nrf::gpio::{Level, Output, OutputDrive};
 use embassy_nrf::interrupt::{self, InterruptExt, Priority};
-use embassy_time::{Timer, Duration};
-use nrf_modem::{ConnectionPreference, SystemMode};
-use serde::{Serialize, Deserialize};
+use embassy_time::{Duration, Timer};
 use golioth_rs::LightDBWriteType::{State, Stream};
 use golioth_rs::*;
+use nrf_modem::{ConnectionPreference, SystemMode};
+use serde::{Deserialize, Serialize};
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
@@ -87,7 +87,10 @@ async fn run() -> Result<(), Error> {
     info!("Creating DTLS Socket to golioth.io");
     let mut golioth = Golioth::new().await?;
 
-    let mut sensor = TempSensor { temp: 0.0, battery: 0 };
+    let mut sensor = TempSensor {
+        temp: 0.0,
+        battery: 0,
+    };
 
     // Simulate device sensor/adc measurements
     info!("Simulating sensor measurements");
@@ -99,18 +102,19 @@ async fn run() -> Result<(), Error> {
     led.state = true;
 
     // Use LightDB State to record the current state of an LED
-    golioth.lightdb_write(State, "Greenhouse_1/led", &led).await?;
-
-    // 500ms delay
-    Timer::after(Duration::from_millis(500)).await;
+    info!("Writing to LightDB State");
+    golioth
+        .lightdb_write(State, "Greenhouse_1/led", &led)
+        .await?;
 
     // Record data to LightDB Stream
-    info!("Sending payload");
+    info!("Writing to LightDB Stream");
     golioth.lightdb_write(Stream, "Greenhouse_1", &sensor).await?;
 
     // 500ms delay
-    Timer::after(Duration::from_millis(500)).await;
-    
+    // Timer::after(Duration::from_millis(2000)).await;
+
+    info!("Reading LightDB State");
     let digital_twin = golioth.lightdb_read_state("Greenhouse_1/led").await?;
     info!("state read: {}", &digital_twin);
 

@@ -1,6 +1,8 @@
 // use core::sync::atomic::{AtomicUsize, Ordering};
 // use embassy_time::Instant;
 
+// use core::sync::atomic::AtomicUsize;
+
 // same panicking *behavior* as `panic-probe` but doesn't print a panic message
 // this prevents the panic message being printed *twice* when `defmt::panic` is invoked
 #[defmt::panic_handler]

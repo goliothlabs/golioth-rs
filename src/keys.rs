@@ -1,5 +1,6 @@
 use crate::config::{PSK, PSK_ID, SECURITY_TAG};
 use crate::Error;
+// use at_commands::builder::CommandBuilder;
 use core::fmt::write;
 use defmt::Format;
 use heapless::String;
@@ -30,15 +31,13 @@ async fn key_delete(ty: CSMType) -> Result<(), Error> {
 
 /// This function writes a key or certificate to the nrf modem
 async fn key_write(ty: CSMType, data: &str) -> Result<(), Error> {
-    let mut cmd: String<128> = String::new();
+    let mut cmd: String<32> = String::new();
     write(
         &mut cmd,
         format_args!(r#"AT%CMNG=0,{},{},"{}""#, SECURITY_TAG, ty as u32, data),
     )
     .unwrap();
-
     nrf_modem::send_at::<128>(&cmd.as_str()).await?;
-
     Ok(())
 }
 

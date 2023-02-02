@@ -12,16 +12,16 @@ pub mod utils;
 
 use alloc::format;
 // use alloc::vec::Vec;
-use defmt_rtt as _; // global logger
-use panic_probe as _;
 use crate::config::{GOLIOTH_SERVER_PORT, GOLIOTH_SERVER_URL, SECURITY_TAG};
 use coap_lite::{error::MessageError, CoapRequest, ContentFormat, Packet, RequestType};
-use core::{str};
-use defmt::{debug};
+use core::str;
+use core::sync::atomic::{AtomicU16, Ordering};
+use defmt::debug;
+use defmt_rtt as _; // global logger
 use nrf_modem::{DtlsSocket, PeerVerification};
+use panic_probe as _;
 use serde::de::DeserializeOwned;
-use serde::{Serialize};
-
+use serde::Serialize;
 
 /// Once flashed, comment this out along with the SPM entry in memory.x to eliminate flashing the SPM
 /// more than once, and will speed up subsequent builds.  Or leave it and flash it every time
@@ -76,7 +76,7 @@ pub enum LightDBWriteType {
     Stream,
 }
 
-// static MESSAGE_ID_COUNTER: AtomicU16 = AtomicU16::new(0);
+static MESSAGE_ID_COUNTER: AtomicU16 = AtomicU16::new(0);
 
 pub struct Golioth {
     socket: DtlsSocket,
@@ -98,14 +98,14 @@ impl Golioth {
     }
 
     #[inline]
-    async fn request_and_recv(&mut self, data: &[u8]) -> Result<heapless::Vec<u8,1024>, Error> {
+    async fn request_and_recv(&mut self, data: &[u8]) -> Result<heapless::Vec<u8, 1024>, Error> {
         self.socket.send(data).await?;
 
         let mut buf = heapless::Vec::<u8, 1024>::new();
 
         let (response, _src_addr) = self.socket.receive_from(&mut buf[..]).await?;
 
-        debug!("{}", response);
+        debug!("response: {}", response);
         let n = response.len();
 
         buf.truncate(n);
@@ -136,7 +136,7 @@ impl Golioth {
     ) -> Result<T, Error> {
         let mut request: CoapRequest<DtlsSocket> = CoapRequest::new();
 
-        // request.message.header.message_id = MESSAGE_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
+        request.message.header.message_id = MESSAGE_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
         request.set_method(RequestType::Get);
         request.set_path(&format!(".d/{}", path));
         request
@@ -156,7 +156,7 @@ impl Golioth {
     ) -> Result<(), Error> {
         let mut request: CoapRequest<DtlsSocket> = CoapRequest::new();
 
-        // request.message.header.message_id = MESSAGE_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
+        request.message.header.message_id = MESSAGE_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
         request.set_method(RequestType::Post);
 
         let formatted_path = match write_type {
