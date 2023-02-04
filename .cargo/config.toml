@@ -25,7 +25,7 @@ DEFMT_LOG = "debug"
 target = "thumbv8m.main-none-eabihf" # Cortex-M33 (with FPU)
 
 [alias]
-b = "build --bin"
+bb = "build --bin"
 brb = "build --release --bin"
 rb = "run --bin"
 rrb = "run --release --bin"

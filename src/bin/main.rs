@@ -109,7 +109,9 @@ async fn run() -> Result<(), Error> {
 
     // Record data to LightDB Stream
     info!("Writing to LightDB Stream");
-    golioth.lightdb_write(Stream, "Greenhouse_1", &sensor).await?;
+    golioth
+        .lightdb_write(Stream, "Greenhouse_1", &sensor)
+        .await?;
 
     // 500ms delay
     // Timer::after(Duration::from_millis(2000)).await;

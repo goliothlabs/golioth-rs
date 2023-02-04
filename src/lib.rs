@@ -36,7 +36,7 @@ pub enum Error {
     Json(serde_json::error::Error),
     NrfModem(nrf_modem::Error),
     Timeout(embassy_time::TimeoutError),
-    ParseError(at_commands::parser::ParseError),
+    // ParseError(at_commands::parser::ParseError),
 }
 
 impl From<MessageError> for Error {
@@ -63,11 +63,11 @@ impl From<embassy_time::TimeoutError> for Error {
     }
 }
 
-impl From<at_commands::parser::ParseError> for Error {
-    fn from(e: at_commands::parser::ParseError) -> Self {
-        Self::ParseError(e)
-    }
-}
+// impl From<at_commands::parser::ParseError> for Error {
+//     fn from(e: at_commands::parser::ParseError) -> Self {
+//         Self::ParseError(e)
+//     }
+// }
 
 // Enum for light_db write types
 #[derive(Debug)]
@@ -103,12 +103,12 @@ impl Golioth {
 
         let mut buf = heapless::Vec::<u8, 1024>::new();
 
-        let (response, _src_addr) = self.socket.receive_from(&mut buf[..]).await?;
+        let (_response, _src_addr) = self.socket.receive_from(&mut buf[..]).await?;
 
-        debug!("response: {}", response);
-        let n = response.len();
+        debug!("response: {}", buf.as_slice());
+        // let n = response.len();
 
-        buf.truncate(n);
+        // buf.truncate(n);
 
         Ok(buf)
     }
