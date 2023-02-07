@@ -6,30 +6,30 @@ extern crate alloc;
 extern crate tinyrlibc;
 
 pub mod config;
+pub mod errors;
 pub mod heap;
 pub mod keys;
 pub mod utils;
-pub mod errors;
 
-use alloc::format;
 use crate::config::{GOLIOTH_SERVER_PORT, GOLIOTH_SERVER_URL, SECURITY_TAG};
+use crate::errors::Error;
+use alloc::format;
+use at_commands::parser::CommandParser;
 use coap_lite::{CoapRequest, ContentFormat, Packet, RequestType};
 use core::str;
 use core::sync::atomic::{AtomicU16, Ordering};
-use defmt::{debug, Debug2Format};
+use defmt::debug;
 use defmt_rtt as _; // global logger
 use nrf_modem::{DtlsSocket, PeerVerification};
 use panic_probe as _;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use crate::errors::Error;
 
 // Once flashed, comment this out along with the SPM entry in memory.x to eliminate flashing the SPM
 // more than once, and will speed up subsequent builds.  Or leave it and flash it every time
 // #[link_section = ".spm"]
 // #[used]
 // static SPM: [u8; 24052] = *include_bytes!("zephyr.bin");
-
 
 // Enum for light_db write types
 #[derive(Debug)]
@@ -73,6 +73,9 @@ impl Golioth {
     //     Ok(buf)
     // }
 
+    // the DeserializeOwned trait is equivalent to the higher-rank trait bound
+    // for<'de> Deserialize<'de>. The only difference is DeserializeOwned is more
+    // intuitive to read. It means T owns all the data that gets deserialized.
     pub async fn lightdb_read_state<T: DeserializeOwned>(
         &mut self,
         path: &str,
@@ -86,17 +89,15 @@ impl Golioth {
             .message
             .set_content_format(ContentFormat::ApplicationJSON);
 
-        debug!("CoAP read header: {}", Debug2Format(&request.message.header));
-
-        let mut buf = [0;1024];
+        let mut buf = [0; 1024];
 
         self.socket.send(&request.message.to_bytes()?).await?;
 
         let (response, _src_addr) = self.socket.receive_from(&mut buf[..]).await?;
-        debug!("response: {:X}", &response);
+        // debug!("response: {:X}", &response);
 
         let packet = Packet::from_bytes(&response)?;
-        debug!("Packet: {:X}", Debug2Format(&packet.payload));
+        // debug!("Packet: {}", Debug2Format(&packet.payload));
 
         Ok(serde_json::from_slice(&packet.payload)?)
     }
@@ -133,4 +134,24 @@ impl Golioth {
 
         Ok(())
     }
+}
+
+pub async fn get_signal_strength() -> Result<i32, Error> {
+    let command = nrf_modem::send_at::<32>("AT+CESQ").await?;
+
+    let (_, _, _, _, _, mut signal) = CommandParser::parse(command.as_bytes())
+        .expect_identifier(b"+CESQ:")
+        .expect_int_parameter()
+        .expect_int_parameter()
+        .expect_int_parameter()
+        .expect_int_parameter()
+        .expect_int_parameter()
+        .expect_int_parameter()
+        .expect_identifier(b"\r\n")
+        .finish()
+        .unwrap();
+    if signal != 255 {
+        signal += -140;
+    }
+    Ok(signal)
 }

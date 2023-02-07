@@ -40,7 +40,7 @@ async fn run() -> ! {
     // Setup uarte interrupt and intialize UARTE with configuration
     let irq = interrupt::take!(UARTE0_SPIM0_SPIS0_TWIM0_TWIS0);
     let uart = uarte::Uarte::new(p.UARTETWISPI0, irq, p.P0_05, p.P0_06, config);
-    let (mut tx, mut rx) = uart.split_with_idle(p.TIMER0,p.PPI_CH0, p.PPI_CH1);
+    let (mut tx, mut rx) = uart.split_with_idle(p.TIMER0, p.PPI_CH0, p.PPI_CH1);
 
     // Initialize cellular modem with system mode options
     nrf_modem::init(SystemMode {
@@ -53,7 +53,7 @@ async fn run() -> ! {
     .await
     .unwrap();
 
-    let mut buffer = [0;1024];
+    let mut buffer = [0; 1024];
 
     loop {
         // read the command from LTE Link Monitor GUI
