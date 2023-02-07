@@ -9,65 +9,27 @@ pub mod config;
 pub mod heap;
 pub mod keys;
 pub mod utils;
+pub mod errors;
 
 use alloc::format;
-// use alloc::vec::Vec;
 use crate::config::{GOLIOTH_SERVER_PORT, GOLIOTH_SERVER_URL, SECURITY_TAG};
-use coap_lite::{error::MessageError, CoapRequest, ContentFormat, Packet, RequestType};
+use coap_lite::{CoapRequest, ContentFormat, Packet, RequestType};
 use core::str;
 use core::sync::atomic::{AtomicU16, Ordering};
-use defmt::debug;
+use defmt::{debug, Debug2Format};
 use defmt_rtt as _; // global logger
 use nrf_modem::{DtlsSocket, PeerVerification};
 use panic_probe as _;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use crate::errors::Error;
 
-/// Once flashed, comment this out along with the SPM entry in memory.x to eliminate flashing the SPM
-/// more than once, and will speed up subsequent builds.  Or leave it and flash it every time
+// Once flashed, comment this out along with the SPM entry in memory.x to eliminate flashing the SPM
+// more than once, and will speed up subsequent builds.  Or leave it and flash it every time
 // #[link_section = ".spm"]
 // #[used]
 // static SPM: [u8; 24052] = *include_bytes!("zephyr.bin");
 
-/// Crate error types
-#[derive(Debug)]
-pub enum Error {
-    Coap(MessageError),
-    Json(serde_json::error::Error),
-    NrfModem(nrf_modem::Error),
-    Timeout(embassy_time::TimeoutError),
-    // ParseError(at_commands::parser::ParseError),
-}
-
-impl From<MessageError> for Error {
-    fn from(e: MessageError) -> Self {
-        Self::Coap(e)
-    }
-}
-
-impl From<serde_json::error::Error> for Error {
-    fn from(e: serde_json::error::Error) -> Self {
-        Self::Json(e)
-    }
-}
-
-impl From<nrf_modem::Error> for Error {
-    fn from(e: nrf_modem::Error) -> Self {
-        Self::NrfModem(e)
-    }
-}
-
-impl From<embassy_time::TimeoutError> for Error {
-    fn from(e: embassy_time::TimeoutError) -> Self {
-        Self::Timeout(e)
-    }
-}
-
-// impl From<at_commands::parser::ParseError> for Error {
-//     fn from(e: at_commands::parser::ParseError) -> Self {
-//         Self::ParseError(e)
-//     }
-// }
 
 // Enum for light_db write types
 #[derive(Debug)]
@@ -97,37 +59,18 @@ impl Golioth {
         Ok(Self { socket })
     }
 
-    #[inline]
-    async fn request_and_recv(&mut self, data: &[u8]) -> Result<heapless::Vec<u8, 1024>, Error> {
-        self.socket.send(data).await?;
-
-        let mut buf = heapless::Vec::<u8, 1024>::new();
-
-        let (_response, _src_addr) = self.socket.receive_from(&mut buf[..]).await?;
-
-        debug!("response: {}", buf.as_slice());
-        // let n = response.len();
-
-        // buf.truncate(n);
-
-        Ok(buf)
-    }
-
-    // async fn lightdb_read_raw(&mut self, path: &str) -> Result<Vec<u8>, Error> {
-    //     let mut request: CoapRequest<DtlsSocket> = CoapRequest::new();
+    // #[inline]
+    // async fn request_and_recv(&mut self, data: &[u8]) -> Result<heapless::Vec<u8, 1024>, Error> {
+    //     let mut buf = heapless::Vec::<u8, 1024>::new();
+    //     self.socket.send(data).await?;
     //
-    //     // request.message.header.message_id = MESSAGE_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
-    //     request.set_method(RequestType::Get);
-    //     request.set_path(&format!(".d/{}", path));
-    //     request
-    //         .message
-    //         .set_content_format(ContentFormat::ApplicationJSON);
+    //     let (response, _src_addr) = self.socket.receive_from(&mut buf[..]).await?;
     //
-    //     let resp = self.request_and_recv(&request.message.to_bytes()?).await?;
+    //     let n = response.len();
     //
-    //     let packet = Packet::from_bytes(&resp)?;
+    //     buf.truncate(n);
     //
-    //     Ok(packet.payload)
+    //     Ok(buf)
     // }
 
     pub async fn lightdb_read_state<T: DeserializeOwned>(
@@ -143,8 +86,18 @@ impl Golioth {
             .message
             .set_content_format(ContentFormat::ApplicationJSON);
 
-        let resp = self.request_and_recv(&request.message.to_bytes()?).await?;
-        let packet = Packet::from_bytes(&resp)?;
+        debug!("CoAP read header: {}", Debug2Format(&request.message.header));
+
+        let mut buf = [0;1024];
+
+        self.socket.send(&request.message.to_bytes()?).await?;
+
+        let (response, _src_addr) = self.socket.receive_from(&mut buf[..]).await?;
+        debug!("response: {:X}", &response);
+
+        let packet = Packet::from_bytes(&response)?;
+        debug!("Packet: {:X}", Debug2Format(&packet.payload));
+
         Ok(serde_json::from_slice(&packet.payload)?)
     }
 

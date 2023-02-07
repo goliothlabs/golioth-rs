@@ -4,13 +4,21 @@
 
 use defmt::{error, info, unwrap, Format};
 use embassy_executor::Spawner;
-// use embassy_nrf::gpio::{Level, Output, OutputDrive};
 use embassy_nrf::interrupt::{self, InterruptExt, Priority};
-use embassy_time::{Duration, Timer};
 use golioth_rs::LightDBWriteType::{State, Stream};
 use golioth_rs::*;
 use nrf_modem::{ConnectionPreference, SystemMode};
 use serde::{Deserialize, Serialize};
+use golioth_rs::errors::Error;
+
+// Stucture to hold sensor data: temperature in F, battery level in mV
+#[derive(Format, Serialize, Deserialize)]
+struct TempSensor<'a> {
+    temp: f32,
+    battery: u32,
+    #[serde(skip_deserializing)]
+    units: &'a str,
+}
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
@@ -54,19 +62,6 @@ async fn run() -> Result<(), Error> {
     // let mut p = embassy_nrf::init(Default::default());
     // let mut led = Output::new(p.P0_03, Level::High, OutputDrive::Standard);
 
-    // Stucture to hold sensor data: temperature in F, battery level in mV
-    #[derive(Format, Serialize, Deserialize)]
-    struct TempSensor {
-        temp: f32,
-        battery: u32,
-    }
-
-    // Stucture to hold sensor data: temperature in F, battery level in mV
-    #[derive(Format, Serialize, Deserialize)]
-    struct LED {
-        state: bool,
-    }
-
     // Initialize cellular modem
     unwrap!(
         nrf_modem::init(SystemMode {
@@ -80,8 +75,8 @@ async fn run() -> Result<(), Error> {
     );
 
     // Place PSK authentication items in modem for DTLS
-    info!("Uploading PSK ID and Key");
-    keys::install_psk_id_and_psk().await?;
+    // info!("Uploading PSK ID and Key");
+    // keys::install_psk_id_and_psk().await?;
 
     // Structure holding our DTLS socket to Golioth Cloud
     info!("Creating DTLS Socket to golioth.io");
@@ -90,6 +85,7 @@ async fn run() -> Result<(), Error> {
     let mut sensor = TempSensor {
         temp: 0.0,
         battery: 0,
+        units: "F",
     };
 
     // Simulate device sensor/adc measurements
@@ -97,27 +93,24 @@ async fn run() -> Result<(), Error> {
     sensor.temp = 67.5;
     sensor.battery = 3300;
 
-    let mut led = LED { state: false };
+    let device_id = "Greenhouse_1/Sensor_1";
 
-    led.state = true;
+    for _ in 0..3 {
+        // Use LightDB State to record the current state of a sensor
+        info!("Writing to LightDB State");
+        golioth.lightdb_write(State, device_id, &sensor).await?;
 
-    // Use LightDB State to record the current state of an LED
-    info!("Writing to LightDB State");
-    golioth
-        .lightdb_write(State, "Greenhouse_1/led", &led)
-        .await?;
+        // Record data to LightDB Stream
+        info!("Writing to LightDB Stream");
+        golioth.lightdb_write(Stream, device_id, &sensor).await?;
 
-    // Record data to LightDB Stream
-    info!("Writing to LightDB Stream");
-    golioth
-        .lightdb_write(Stream, "Greenhouse_1", &sensor)
-        .await?;
+        // Simulate battery drain
+        sensor.battery -= 15;
+    }
 
-    // 500ms delay
-    // Timer::after(Duration::from_millis(2000)).await;
-
+    // Read the state of our device as it exists in the cloud
     info!("Reading LightDB State");
-    let digital_twin = golioth.lightdb_read_state("Greenhouse_1/led").await?;
+    let digital_twin: TempSensor = golioth.lightdb_read_state(device_id).await?;
     info!("state read: {}", &digital_twin);
 
     Ok(())
