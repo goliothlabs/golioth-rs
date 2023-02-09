@@ -6,7 +6,7 @@ use defmt::{error, info, unwrap, Format};
 use embassy_executor::Spawner;
 use embassy_nrf::interrupt::{self, InterruptExt, Priority};
 use golioth_rs::errors::Error;
-use golioth_rs::LightDBWriteType::{State, Stream};
+use golioth_rs::LightDBType::{State, Stream};
 use golioth_rs::*;
 use nrf_modem::{ConnectionPreference, SystemMode};
 use serde::{Deserialize, Serialize};
@@ -98,7 +98,7 @@ async fn run() -> Result<(), Error> {
 
     let write_path = "data";
 
-    for _ in 0..3 {
+    for _ in 0..1 {
         // Use LightDB State to record the current state of a sensor
         info!("Writing to LightDB State");
         golioth.lightdb_write(State, write_path, &sensor).await?;
@@ -111,6 +111,9 @@ async fn run() -> Result<(), Error> {
         sensor.meta.battery -= 15;
         sensor.meta.signal = get_signal_strength().await?;
     }
+
+    let digital_twin: TempSensor = golioth.lightdb_read_state(write_path).await?;
+    info!("state read: {}", &digital_twin);
 
     Ok(())
 }

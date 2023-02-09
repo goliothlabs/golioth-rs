@@ -9,7 +9,7 @@ use embassy_nrf::interrupt::{self, InterruptExt, Priority};
 use embassy_time::{Duration, Ticker, Timer};
 use futures::StreamExt;
 use golioth_rs::errors::Error;
-use golioth_rs::LightDBWriteType::State;
+use golioth_rs::LightDBType::{State, Stream};
 use golioth_rs::*;
 use nrf_modem::{ConnectionPreference, SystemMode};
 use serde::{Deserialize, Serialize};
@@ -73,13 +73,13 @@ async fn run() -> Result<(), Error> {
     };
 
     // Create our sleep timer (time between operations)
-    let mut ticker = Ticker::every(Duration::from_secs(30));
+    // let mut ticker = Ticker::every(Duration::from_secs(30));
 
     // Initialize cellular modem
     unwrap!(
         nrf_modem::init(SystemMode {
             lte_support: true,
-            lte_psm_support: true,
+            lte_psm_support: false,
             nbiot_support: false,
             gnss_support: false,
             preference: ConnectionPreference::Lte,
@@ -95,33 +95,39 @@ async fn run() -> Result<(), Error> {
     info!("Creating DTLS Socket to golioth.io");
     let mut golioth = Golioth::new().await?;
 
-    let path = "state";
+    let path = "led";
 
     // Make sure the cloud has a state instance
     info!("Writing to LightDB State");
     golioth.lightdb_write(State, path, &led).await?;
 
-    Timer::after(Duration::from_millis(5000)).await;
+    info!("Writing to LightDB Stream");
+    golioth.lightdb_write(Stream, path, &led).await?;
 
-    // loop 3 times
-    for _ in 0..3 {
-        // Read the state of our device as it exists in the cloud
-        info!("Reading LightDB State");
-        let digital_twin: Led = golioth.lightdb_read_state(path).await?;
+    let digital_twin: Led = golioth.lightdb_read(State,path).await?;
         info!("state read: {}", &digital_twin);
 
-        if digital_twin.desired != led.blue {
-            match digital_twin.desired  {
-                true => { blue.set_low() }
-                false => { blue.set_high() }
-            }
-            led.blue = digital_twin.desired ;
-        }
-
-        // wait for next tick event with low power sleep
-        info!("Ticker next()");
-        ticker.next().await;
-    }
+    // loop 3 times
+    // for _ in 0..3 {
+    //     // Read the state of our device as it exists in the cloud
+    //     info!("Reading LightDB State");
+    //     let digital_twin: Led = golioth.lightdb_read(State,path).await?;
+    //     info!("state read: {}", &digital_twin);
+    //
+    //     if digital_twin.desired != led.blue {
+    //         match digital_twin.desired  {
+    //             true => { blue.set_low() }
+    //             false => { blue.set_high() }
+    //         }
+    //         led.blue = digital_twin.desired;
+    //         golioth.lightdb_write(State, path, &led).await?;
+    //     }
+    //
+    //     // wait for next tick event with low power sleep
+    //     info!("Ticker next()");
+    //     // ticker.next().await;
+    //     Timer::after(Duration::from_millis(5000)).await;
+    // }
 
     Ok(())
 }

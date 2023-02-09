@@ -14,11 +14,12 @@ pub mod utils;
 use crate::config::{GOLIOTH_SERVER_PORT, GOLIOTH_SERVER_URL, SECURITY_TAG};
 use crate::errors::Error;
 use alloc::format;
+use alloc::string::String;
 use at_commands::parser::CommandParser;
 use coap_lite::{CoapRequest, ContentFormat, Packet, RequestType};
 use core::str;
 use core::sync::atomic::{AtomicU16, Ordering};
-use defmt::debug;
+use defmt::{debug, Debug2Format};
 use defmt_rtt as _; // global logger
 use nrf_modem::{DtlsSocket, PeerVerification};
 use panic_probe as _;
@@ -33,7 +34,7 @@ use serde::Serialize;
 
 // Enum for light_db write types
 #[derive(Debug)]
-pub enum LightDBWriteType {
+pub enum LightDBType {
     State,
     Stream,
 }
@@ -76,15 +77,17 @@ impl Golioth {
     // the DeserializeOwned trait is equivalent to the higher-rank trait bound
     // for<'de> Deserialize<'de>. The only difference is DeserializeOwned is more
     // intuitive to read. It means T owns all the data that gets deserialized.
-    pub async fn lightdb_read_state<T: DeserializeOwned>(
+    pub async fn lightdb_read<T: DeserializeOwned>(
         &mut self,
+        read_type: LightDBType,
         path: &str,
     ) -> Result<T, Error> {
         let mut request: CoapRequest<DtlsSocket> = CoapRequest::new();
+        let formatted_path = get_formatted_path(read_type, path);
 
         request.message.header.message_id = MESSAGE_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
         request.set_method(RequestType::Get);
-        request.set_path(&format!(".d/{}", path));
+        request.set_path(&formatted_path);
         request
             .message
             .set_content_format(ContentFormat::ApplicationJSON);
@@ -94,7 +97,7 @@ impl Golioth {
         self.socket.send(&request.message.to_bytes()?).await?;
 
         let (response, _src_addr) = self.socket.receive_from(&mut buf[..]).await?;
-        // debug!("response: {:X}", &response);
+        debug!("response: {:X}", &response);
 
         let packet = Packet::from_bytes(&response)?;
         // debug!("Packet: {}", Debug2Format(&packet.payload));
@@ -104,7 +107,7 @@ impl Golioth {
 
     pub async fn lightdb_write<T: Serialize>(
         &mut self,
-        write_type: LightDBWriteType,
+        write_type: LightDBType,
         path: &str,
         v: T,
     ) -> Result<(), Error> {
@@ -113,17 +116,11 @@ impl Golioth {
         request.message.header.message_id = MESSAGE_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
         request.set_method(RequestType::Post);
 
-        let formatted_path = match write_type {
-            LightDBWriteType::State => {
-                format!(".d/{}", path)
-            }
-            LightDBWriteType::Stream => {
-                format!(".s/{}", path)
-            }
-        };
+        let formatted_path = get_formatted_path(write_type, path);
+
         debug!("set lighdb path: {}", &formatted_path.as_str());
 
-        request.set_path(&formatted_path.as_str());
+        request.set_path(&formatted_path);
 
         request
             .message
@@ -133,6 +130,18 @@ impl Golioth {
         self.socket.send(&request.message.to_bytes()?).await?;
 
         Ok(())
+    }
+}
+
+#[inline]
+fn get_formatted_path(db_type: LightDBType, path: &str) -> String {
+    match db_type {
+        LightDBType::State => {
+            format!(".d/{}", path)
+        }
+        LightDBType::Stream => {
+            format!(".s/{}", path)
+        }
     }
 }
 
