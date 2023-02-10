@@ -5,6 +5,7 @@
 use defmt::{error, info, unwrap, Format};
 use embassy_executor::Spawner;
 use embassy_nrf::interrupt::{self, InterruptExt, Priority};
+use embassy_time::{Duration, Timer};
 use golioth_rs::errors::Error;
 use golioth_rs::LightDBType::{State, Stream};
 use golioth_rs::*;
@@ -76,8 +77,8 @@ async fn run() -> Result<(), Error> {
     );
 
     // Place PSK authentication items in modem for DTLS
-    // info!("Uploading PSK ID and Key");
-    // keys::install_psk_id_and_psk().await?;
+    info!("Uploading PSK ID and Key");
+    keys::install_psk_id_and_psk().await?;
 
     // Structure holding our DTLS socket to Golioth Cloud
     info!("Creating DTLS Socket to golioth.io");
@@ -103,16 +104,20 @@ async fn run() -> Result<(), Error> {
         info!("Writing to LightDB State");
         golioth.lightdb_write(State, write_path, &sensor).await?;
 
+        Timer::after(Duration::from_millis(500)).await;
+
         // Record data to LightDB Stream
         info!("Writing to LightDB Stream");
         golioth.lightdb_write(Stream, write_path, &sensor).await?;
+
+        Timer::after(Duration::from_millis(500)).await;
 
         // Simulate battery drain
         sensor.meta.battery -= 15;
         sensor.meta.signal = get_signal_strength().await?;
     }
 
-    let digital_twin: TempSensor = golioth.lightdb_read_state(write_path).await?;
+    let digital_twin: TempSensor = golioth.lightdb_read(State, write_path).await?;
     info!("state read: {}", &digital_twin);
 
     Ok(())

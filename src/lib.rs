@@ -28,9 +28,9 @@ use serde::Serialize;
 
 // Once flashed, comment this out along with the SPM entry in memory.x to eliminate flashing the SPM
 // more than once, and will speed up subsequent builds.  Or leave it and flash it every time
-// #[link_section = ".spm"]
-// #[used]
-// static SPM: [u8; 24052] = *include_bytes!("zephyr.bin");
+#[link_section = ".spm"]
+#[used]
+static SPM: [u8; 24052] = *include_bytes!("zephyr.bin");
 
 // Enum for light_db write types
 #[derive(Debug)]
@@ -100,7 +100,7 @@ impl Golioth {
         debug!("response: {:X}", &response);
 
         let packet = Packet::from_bytes(&response)?;
-        // debug!("Packet: {}", Debug2Format(&packet.payload));
+        debug!("Packet: {}", Debug2Format(&packet.payload));
 
         Ok(serde_json::from_slice(&packet.payload)?)
     }

@@ -73,7 +73,7 @@ async fn run() -> Result<(), Error> {
     };
 
     // Create our sleep timer (time between operations)
-    // let mut ticker = Ticker::every(Duration::from_secs(30));
+    let mut ticker = Ticker::every(Duration::from_secs(30));
 
     // Initialize cellular modem
     unwrap!(
@@ -88,8 +88,8 @@ async fn run() -> Result<(), Error> {
     );
 
     // Place PSK authentication items in modem for DTLS
-    // info!("Uploading PSK ID and Key");
-    // keys::install_psk_id_and_psk().await?;
+    info!("Uploading PSK ID and Key");
+    keys::install_psk_id_and_psk().await?;
 
     // Structure holding our DTLS socket to Golioth Cloud
     info!("Creating DTLS Socket to golioth.io");
@@ -101,33 +101,31 @@ async fn run() -> Result<(), Error> {
     info!("Writing to LightDB State");
     golioth.lightdb_write(State, path, &led).await?;
 
-    info!("Writing to LightDB Stream");
-    golioth.lightdb_write(Stream, path, &led).await?;
+    Timer::after(Duration::from_millis(500)).await;
 
     let digital_twin: Led = golioth.lightdb_read(State,path).await?;
         info!("state read: {}", &digital_twin);
 
     // loop 3 times
-    // for _ in 0..3 {
-    //     // Read the state of our device as it exists in the cloud
-    //     info!("Reading LightDB State");
-    //     let digital_twin: Led = golioth.lightdb_read(State,path).await?;
-    //     info!("state read: {}", &digital_twin);
-    //
-    //     if digital_twin.desired != led.blue {
-    //         match digital_twin.desired  {
-    //             true => { blue.set_low() }
-    //             false => { blue.set_high() }
-    //         }
-    //         led.blue = digital_twin.desired;
-    //         golioth.lightdb_write(State, path, &led).await?;
-    //     }
-    //
-    //     // wait for next tick event with low power sleep
-    //     info!("Ticker next()");
-    //     // ticker.next().await;
-    //     Timer::after(Duration::from_millis(5000)).await;
-    // }
+    for _ in 0..3 {
+        // Read the state of our device as it exists in the cloud
+        info!("Reading LightDB State");
+        let digital_twin: Led = golioth.lightdb_read(State,path).await?;
+        info!("state read: {}", &digital_twin);
+
+        if digital_twin.desired != led.blue {
+            match digital_twin.desired  {
+                true => { blue.set_low() }
+                false => { blue.set_high() }
+            }
+            led.blue = digital_twin.desired;
+            golioth.lightdb_write(State, path, &led).await?;
+        }
+
+        // wait for next tick event with low power sleep
+        info!("Ticker next()");
+        ticker.next().await;
+    }
 
     Ok(())
 }
