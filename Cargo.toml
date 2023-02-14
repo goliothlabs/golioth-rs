@@ -1,41 +1,41 @@
 [package]
-# TODO(1) fix `authors` and `name` if you didn't use `cargo-generate`
-authors = ["Lachlan Sneff <lachlan.sneff@gmail.com>"]
-name = "golioth-rs-test"
-edition = "2018"
-version = "0.1.0"
+authors = ["Daniel Hayes <dkhayes117@annealed-engineering.com>, Lachlan Sneff <lachlan.sneff@gmail.com>"]
+name = "golioth-rs"
+edition = "2021"
+version = "0.2.0"
 resolver = "2"
 
-[dependencies]
-cortex-m = "0.7.1"
-cortex-m-rt = "0.6.13"
-defmt = "0.2.0"
-defmt-rtt = "0.2.0"
-panic-probe = { version = "0.2.0", features = ["print-defmt"] }
-nrf9160-hal = "0.12.2"
-nrfxlib = "0.6.0"
-# nrfxlib = { path = "../nrfxlib" }
-tinyrlibc = "0.2.1" # to fix build issues with nrfxlib-sys
-alloc-cortex-m = "0.4.1"
-coap-lite = { version = "0.4.1", default-features = false }
-heapless = "0.7.2"
-serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
-serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
-
 [features]
-# set logging levels here
-default = [
-  "defmt-default",
-  # "dependency-a/defmt-trace",
-]
+default = ["nightly"]
+nightly = ["embassy-executor/nightly", "embassy-nrf/nightly", "embassy-nrf/unstable-traits"]
 
-# do NOT modify these features
-defmt-default = []
-defmt-trace = []
-defmt-debug = []
-defmt-info = []
-defmt-warn = []
-defmt-error = []
+[dependencies]
+alloc-cortex-m = "0.4.4"
+at-commands = "0.5.2"
+coap-lite = { version = "0.11.2", default-features = false }
+cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
+cortex-m-rt = "0.7.3"
+defmt = "0.3.2"
+defmt-rtt = "0.4.0"
+embassy-futures = { version = "0.1.0"}
+embassy-sync = { version = "0.1.0", features = ["defmt"] }
+embassy-executor = { version = "0.1.1", features = ["defmt", "integrated-timers"] }
+embassy-time = { version = "0.1.0", features = ["defmt", "defmt-timestamp-uptime"] }
+embassy-nrf = { version = "0", features = ["nightly", "nrf9160-ns", "unstable-pac", "time-driver-rtc1", "defmt", "unstable-traits", "time", "gpiote"] }
+futures = { version = "0.3.26", default-features = false, features = ["async-await"] }
+heapless = { version = "0.7.16" }
+nrf-modem = { version = "0.1.1", features = ["defmt"] }
+panic-probe = { version = "0.3.0", features = ["print-defmt"] }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+tinyrlibc = { git = "https://github.com/rust-embedded-community/tinyrlibc.git" }
+
+[patch.crates-io]
+embassy-futures = { git = "https://github.com/embassy-rs/embassy" }
+embassy-sync = { git = "https://github.com/embassy-rs/embassy" }
+embassy-executor = { git = "https://github.com/embassy-rs/embassy" }
+embassy-time = { git = "https://github.com/embassy-rs/embassy" }
+embassy-nrf = { git = "https://github.com/embassy-rs/embassy" }
 
 # cargo build/run
 [profile.dev]
@@ -62,7 +62,7 @@ debug = 2
 debug-assertions = false # <-
 incremental = false
 lto = 'fat'
-opt-level = 3 # <-
+opt-level = 'z' # <-
 overflow-checks = false # <-
 
 # cargo test --release
