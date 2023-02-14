@@ -64,6 +64,7 @@ async fn run() -> Result<(), Error> {
     let p = embassy_nrf::init(Default::default());
 
     // P0_03 -> Blue LED on Conexio Stratus Dev Kit
+    // P0_12 -> Blue LED on Actinius Icarus Dev Kit
     // P0_31 -> Blue LED on Thingy 91
     let mut blue = Output::new(p.P0_03, Level::High, OutputDrive::Standard);
 
