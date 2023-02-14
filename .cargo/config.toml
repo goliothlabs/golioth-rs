@@ -1,14 +1,16 @@
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
 runner = "probe-run --chip nRF9160_xxAA"
 
+# These are implemented in build.rs, but can be implemented here as well
 #rustflags = [
-##  "-C", "linker=flip-link",
-##  "-C", "link-arg=-Tlink.x",
-##  "-C", "link-arg=-Tdefmt.x",
-#  # This is needed if your flash or ram addresses are not aligned to 0x10000 in memory.x
-#  # See https://github.com/rust-embedded/cortex-m-quickstart/pull/95
-##  "-C", "link-arg=--nmagic",
+#  "-C", "linker=flip-link",
+#  "-C", "link-arg=-Tlink.x",
+#  "-C", "link-arg=-Tdefmt.x",
+##   This is needed if your flash or ram addresses are not aligned to 0x10000 in memory.x
+##   See https://github.com/rust-embedded/cortex-m-quickstart/pull/95
+#  "-C", "link-arg=--nmagic",
 #]
+
 [env]
 # `cargo clean -p defmt` after you change this
 DEFMT_LOG = "debug"
@@ -21,5 +23,5 @@ bb = "build --bin"
 brb = "build --release --bin"
 rb = "run --bin"
 rrb = "run --release --bin"
-s = "size --bin app -- -B -x"
+s = "size --bin app-- -B -x"
 sr = "size --release --bin app -- -B -x"

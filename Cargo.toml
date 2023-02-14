@@ -1,5 +1,5 @@
 [package]
-authors = ["Daniel Hayes <dkhayes117@annealed-engineering.com>"]
+authors = ["Daniel Hayes <dkhayes117@annealed-engineering.com>, Lachlan Sneff <lachlan.sneff@gmail.com>"]
 name = "golioth-rs"
 edition = "2021"
 version = "0.2.0"
@@ -28,7 +28,6 @@ nrf-modem = { version = "0.1.1", features = ["defmt"] }
 panic-probe = { version = "0.3.0", features = ["print-defmt"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
-#serde-json-core = { version = "0.5.0" }
 tinyrlibc = { git = "https://github.com/rust-embedded-community/tinyrlibc.git" }
 
 [patch.crates-io]
@@ -62,8 +61,8 @@ codegen-units = 1
 debug = 2
 debug-assertions = false # <-
 incremental = false
-lto = true
-opt-level = 3 # <-
+lto = 'fat'
+opt-level = 'z' # <-
 overflow-checks = false # <-
 
 # cargo test --release

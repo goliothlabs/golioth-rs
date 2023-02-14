@@ -99,26 +99,23 @@ async fn run() -> Result<(), Error> {
 
     let write_path = "data";
 
-    for _ in 0..1 {
-        // Use LightDB State to record the current state of a sensor
-        info!("Writing to LightDB State");
-        golioth.lightdb_write(State, write_path, &sensor).await?;
+    // Use LightDB State to record the current state of a sensor
+    info!("Writing to LightDB State");
+    golioth.lightdb_write(State, write_path, &sensor).await?;
 
-        Timer::after(Duration::from_millis(500)).await;
-
+    // send 3 payloads to LightDB Stream
+    for _ in 0..3 {
         // Record data to LightDB Stream
         info!("Writing to LightDB Stream");
         golioth.lightdb_write(Stream, write_path, &sensor).await?;
 
-        Timer::after(Duration::from_millis(500)).await;
-
         // Simulate battery drain
         sensor.meta.battery -= 15;
+        // get signal strength during transmission
         sensor.meta.signal = get_signal_strength().await?;
-    }
 
-    let digital_twin: TempSensor = golioth.lightdb_read(State, write_path).await?;
-    info!("state read: {}", &digital_twin);
+        Timer::after(Duration::from_millis(500)).await;
+    }
 
     Ok(())
 }

@@ -8,8 +8,7 @@ async framework and [nrf-modem].  This repo currently requires the nightly compi
 ## Bootloader
 
 You will need to flash a Secure Partition Manager (SPM) onto the nRF9160.  For quickstart, an SPM is included in this repo. Embassy can run in secure 
-mode on the nRF9160; however, the modem library must operate in non-secure (NS) mode which means we need the SPM to transition into NS mode
-on boot. This will jump to `0x50000` on boot, which is where the rust binary will be located.
+mode on the nRF9160; however, the modem library must operate in non-secure (NS) mode which means we need the SPM to transition into NS mode.  This will jump to `0x50000` on boot, which is where the rust binary will be located.
 
 ## Config
 
@@ -18,13 +17,14 @@ Insert your device's Golioth PSK ID and PSK in the [src/config.rs] file.
 ## Dependencies
 
 #### 1. `Clang` and `GCC ARM Toolchain`:
+Nordic's nrfxlib is written in C, we need Clang and the ARM GCC toolchain for generating bingings
 ```console
 $ sudo apt install llvm-dev libclang-dev clang
 $ sudo apt install gcc-arm-none-eabi
 ```
 
 #### 2. `flip-link`:
-
+This flips the stack for overflow protection
 ```console
 $ cargo install flip-link
 ```
@@ -37,8 +37,9 @@ Install [probe-run] which is used for the project runner in [.cargo/config.toml]
 $ cargo install probe-run
 ```
 
-#### 4. Set compiler default to `nightly
-`
+#### 4. Set compiler default to nightly
+Nightly is required in order to set up an alloc error handler and for Embassy.
+
 ```console
 $ rustup override set nightly
 ```
@@ -50,7 +51,7 @@ $ rustup target add thumbv8m.main-none-eabi
 ```
 
 #### 6. Run!
-
+Build profiles, such as `release`, can be configured in [Cargo.toml]
 ```console
 $ cargo run --bin sensor_stream
 ```
@@ -60,11 +61,9 @@ or
 ```console
 $ cargo run --release --bin sensor_stream
 ```
+#
 
-> Nightly is required in order to set up an alloc error handler and for Embassy.
-
-
-#### (7. OPTIONAL Set `rust-analyzer.linkedProjects`)
+#### 7. OPTIONAL Set `rust-analyzer.linkedProjects`
 
 If you are using [rust-analyzer] with VS Code for IDE-like features you can add following configuration to your `.vscode/settings.json` to make it work transparently across workspaces. Find the details of this option in the [RA docs].
 
@@ -84,6 +83,7 @@ If you are using [rust-analyzer] with VS Code for IDE-like features you can add 
 
 [src/config.rs]: src/config.rs
 [.cargo/config.toml]: .cargo/config.toml
+[Cargo.toml]: Cargo.toml
 
 ## License
 

@@ -9,7 +9,7 @@ use embassy_nrf::interrupt::{self, InterruptExt, Priority};
 use embassy_time::{Duration, Ticker, Timer};
 use futures::StreamExt;
 use golioth_rs::errors::Error;
-use golioth_rs::LightDBType::{State, Stream};
+use golioth_rs::LightDBType::State;
 use golioth_rs::*;
 use nrf_modem::{ConnectionPreference, SystemMode};
 use serde::{Deserialize, Serialize};
@@ -69,11 +69,11 @@ async fn run() -> Result<(), Error> {
     // Structure for the LED's state
     let mut led = Led {
         blue: false,
-        desired: false,
+        desired: true,
     };
 
     // Create our sleep timer (time between operations)
-    let mut ticker = Ticker::every(Duration::from_secs(30));
+    let mut ticker = Ticker::every(Duration::from_secs(5));
 
     // Initialize cellular modem
     unwrap!(
@@ -95,35 +95,38 @@ async fn run() -> Result<(), Error> {
     info!("Creating DTLS Socket to golioth.io");
     let mut golioth = Golioth::new().await?;
 
-    let path = "led";
-
     // Make sure the cloud has a state instance
     info!("Writing to LightDB State");
-    golioth.lightdb_write(State, path, &led).await?;
+    golioth.lightdb_write(State, "led", &led).await?;
 
     Timer::after(Duration::from_millis(500)).await;
 
-    let digital_twin: Led = golioth.lightdb_read(State,path).await?;
-        info!("state read: {}", &digital_twin);
+    let digital_twin: Led = golioth.lightdb_read(State, "led").await?;
+    info!("state read: {}", &digital_twin);
 
     // loop 3 times
     for _ in 0..3 {
         // Read the state of our device as it exists in the cloud
         info!("Reading LightDB State");
-        let digital_twin: Led = golioth.lightdb_read(State,path).await?;
+        let desired: bool = golioth.lightdb_read(State, "led/desired").await?;
         info!("state read: {}", &digital_twin);
 
-        if digital_twin.desired != led.blue {
-            match digital_twin.desired  {
-                true => { blue.set_low() }
-                false => { blue.set_high() }
+        // If our desired state does not match our current state, update state
+        if desired != led.blue {
+            match desired {
+                true => blue.set_low(),
+                false => blue.set_high(),
             }
-            led.blue = digital_twin.desired;
-            golioth.lightdb_write(State, path, &led).await?;
+            led.blue = desired;
+            // toggle our desired state so that we can demonstrate the updates
+            led.desired = !desired;
+
+            // write state change to Golioth
+            golioth.lightdb_write(State, "led", &led).await?;
         }
 
         // wait for next tick event with low power sleep
-        info!("Ticker next()");
+        info!("Go to sleep");
         ticker.next().await;
     }
 

@@ -16,11 +16,12 @@ use crate::errors::Error;
 use alloc::format;
 use alloc::string::String;
 use at_commands::parser::CommandParser;
+use coap_lite::MessageType::NonConfirmable;
 use coap_lite::{CoapRequest, ContentFormat, Packet, RequestType};
 use core::str;
 use core::sync::atomic::{AtomicU16, Ordering};
-use defmt::{debug, Debug2Format};
-use defmt_rtt as _; // global logger
+use defmt::debug;
+use defmt_rtt as _;
 use nrf_modem::{DtlsSocket, PeerVerification};
 use panic_probe as _;
 use serde::de::DeserializeOwned;
@@ -60,20 +61,6 @@ impl Golioth {
         Ok(Self { socket })
     }
 
-    // #[inline]
-    // async fn request_and_recv(&mut self, data: &[u8]) -> Result<heapless::Vec<u8, 1024>, Error> {
-    //     let mut buf = heapless::Vec::<u8, 1024>::new();
-    //     self.socket.send(data).await?;
-    //
-    //     let (response, _src_addr) = self.socket.receive_from(&mut buf[..]).await?;
-    //
-    //     let n = response.len();
-    //
-    //     buf.truncate(n);
-    //
-    //     Ok(buf)
-    // }
-
     // the DeserializeOwned trait is equivalent to the higher-rank trait bound
     // for<'de> Deserialize<'de>. The only difference is DeserializeOwned is more
     // intuitive to read. It means T owns all the data that gets deserialized.
@@ -93,14 +80,14 @@ impl Golioth {
             .set_content_format(ContentFormat::ApplicationJSON);
 
         let mut buf = [0; 1024];
-
+        // send request
         self.socket.send(&request.message.to_bytes()?).await?;
 
+        // receive request response
         let (response, _src_addr) = self.socket.receive_from(&mut buf[..]).await?;
         debug!("response: {:X}", &response);
 
         let packet = Packet::from_bytes(&response)?;
-        debug!("Packet: {}", Debug2Format(&packet.payload));
 
         Ok(serde_json::from_slice(&packet.payload)?)
     }
@@ -112,12 +99,13 @@ impl Golioth {
         v: T,
     ) -> Result<(), Error> {
         let mut request: CoapRequest<DtlsSocket> = CoapRequest::new();
-
+        // message header id distinguishes duplicate messages
         request.message.header.message_id = MESSAGE_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
         request.set_method(RequestType::Post);
+        // Do not ask for a confirmed response
+        request.message.header.set_type(NonConfirmable);
 
         let formatted_path = get_formatted_path(write_type, path);
-
         debug!("set lighdb path: {}", &formatted_path.as_str());
 
         request.set_path(&formatted_path);
@@ -126,6 +114,7 @@ impl Golioth {
             .message
             .set_content_format(ContentFormat::ApplicationJSON);
         request.message.payload = serde_json::to_vec(&v)?;
+
         debug!("sending bytes");
         self.socket.send(&request.message.to_bytes()?).await?;
 

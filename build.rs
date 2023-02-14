@@ -29,7 +29,11 @@ fn main() {
     // `memory.x` is changed.
     println!("cargo:rerun-if-changed=memory.x");
 
-    println!("cargo:rustc-link-arg-bins=--nmagic");
-    println!("cargo:rustc-link-arg-bins=-Tlink.x");
-    println!("cargo:rustc-link-arg-bins=-Tdefmt.x");
+    println!("cargo:rustc-linker=flip-link");
+    println!("cargo:rustc-link-arg=-Tlink.x");
+    println!("cargo:rustc-link-arg=-Tdefmt.x");
+
+    // This is needed if your flash or ram addresses are not aligned to 0x10000 in memory.x
+    // See https://github.com/rust-embedded/cortex-m-quickstart/pull/95
+    println!("cargo:rustc-link-arg=--nmagic");
 }
