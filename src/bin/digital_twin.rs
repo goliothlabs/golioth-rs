@@ -63,7 +63,8 @@ async fn run() -> Result<(), Error> {
     // Handle for device peripherals
     let p = embassy_nrf::init(Default::default());
 
-    // Blue LED on Conexio Stratus Dev Kit
+    // P0_03 -> Blue LED on Conexio Stratus Dev Kit
+    // P0_31 -> Blue LED on Thingy 91
     let mut blue = Output::new(p.P0_03, Level::High, OutputDrive::Standard);
 
     // Structure for the LED's state
@@ -73,7 +74,7 @@ async fn run() -> Result<(), Error> {
     };
 
     // Create our sleep timer (time between operations)
-    let mut ticker = Ticker::every(Duration::from_secs(5));
+    let mut ticker = Ticker::every(Duration::from_secs(15));
 
     // Initialize cellular modem
     unwrap!(
@@ -109,7 +110,7 @@ async fn run() -> Result<(), Error> {
         // Read the state of our device as it exists in the cloud
         info!("Reading LightDB State");
         let desired: bool = golioth.lightdb_read(State, "led/desired").await?;
-        info!("state read: {}", &digital_twin);
+        info!("state read: {}", &desired);
 
         // If our desired state does not match our current state, update state
         if desired != led.blue {

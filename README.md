@@ -7,6 +7,9 @@ async framework and [nrf-modem].  This repo currently requires the nightly compi
 
 ## Bootloader
 
+Most nRF9160 devices come loaded with the MCUBoot bootloader.  Using this repo will overwrite MCUBoot.  MCUBoot will need to be replaced before going back to the Nordic SDK.  The easiest way to restore it 
+is to flash a binary that includes the MCUBoot in it.  MCUBoot is not needed for this repo.
+
 You will need to flash a Secure Partition Manager (SPM) onto the nRF9160.  For quickstart, an SPM is included in this repo. Embassy can run in secure 
 mode on the nRF9160; however, the modem library must operate in non-secure (NS) mode which means we need the SPM to transition into NS mode.  This will jump to `0x50000` on boot, which is where the rust binary will be located.
 
