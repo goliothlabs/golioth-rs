@@ -33,6 +33,9 @@ use serde::Serialize;
 #[used]
 static SPM: [u8; 24052] = *include_bytes!("zephyr.bin");
 
+// use for CoAP mesaage header ID to avoid requests being flagged as duplicate messages
+static MESSAGE_ID_COUNTER: AtomicU16 = AtomicU16::new(0);
+
 // Enum for light_db write types
 #[derive(Debug)]
 pub enum LightDBType {
@@ -40,8 +43,7 @@ pub enum LightDBType {
     Stream,
 }
 
-static MESSAGE_ID_COUNTER: AtomicU16 = AtomicU16::new(0);
-
+// Struct to hold our DTLS Socket to Golioth, should live the length of the program
 pub struct Golioth {
     socket: DtlsSocket,
 }

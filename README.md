@@ -20,7 +20,7 @@ Insert your device's Golioth PSK ID and PSK in the [src/config.rs] file.
 ## Dependencies
 
 #### 1. `Clang` and `GCC ARM Toolchain`:
-Nordic's nrfxlib is written in C, we need Clang and the ARM GCC toolchain for generating bingings
+Nordic's nrfxlib is written in C, we need Clang and the ARM GCC toolchain for generating bindings
 ```console
 $ sudo apt install llvm-dev libclang-dev clang
 $ sudo apt install gcc-arm-none-eabi

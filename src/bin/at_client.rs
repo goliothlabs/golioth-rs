@@ -44,7 +44,7 @@ async fn run() -> ! {
     // Thingy    P0_19     P0_18      0
     // 91 DK     P0_??     P0_??      0
     let irq = interrupt::take!(UARTE0_SPIM0_SPIS0_TWIM0_TWIS0);
-    let uart = uarte::Uarte::new(p.UARTETWISPI0, irq, p.P0_19, p.P0_18, config);
+    let uart = uarte::Uarte::new(p.UARTETWISPI0, irq, p.P0_05, p.P0_06, config);
     let (mut tx, mut rx) = uart.split_with_idle(p.TIMER0, p.PPI_CH0, p.PPI_CH1);
 
     // Initialize cellular modem with system mode options
