@@ -2,9 +2,11 @@
 #![no_main]
 #![feature(type_alias_impl_trait)]
 
+use cortex_m::peripheral::NVIC;
 use defmt::{error, info, unwrap, Format};
 use embassy_executor::Spawner;
-use embassy_nrf::interrupt::{self, InterruptExt, Priority};
+use embassy_nrf::{interrupt, pac};
+
 use embassy_time::{Duration, Timer};
 use golioth_rs::errors::Error;
 use golioth_rs::LightDBType::{State, Stream};
@@ -27,24 +29,6 @@ pub struct Meta {
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
-    // Set up the interrupts for the modem
-    info!("Setting up interrupts");
-    let egu1 = interrupt::take!(EGU1);
-    egu1.set_priority(Priority::P4);
-    egu1.set_handler(|_| {
-        nrf_modem::application_irq_handler();
-        cortex_m::asm::sev();
-    });
-    egu1.enable();
-
-    let ipc = interrupt::take!(IPC);
-    ipc.set_priority(Priority::P0);
-    ipc.set_handler(|_| {
-        nrf_modem::ipc_irq_handler();
-        cortex_m::asm::sev();
-    });
-    ipc.enable();
-
     // Initialize heap data
     info!("Initialize heap");
     heap::init();
@@ -63,6 +47,16 @@ async fn main(_spawner: Spawner) {
 
 async fn run() -> Result<(), Error> {
     info!("starting application");
+    let mut cp = unwrap!(cortex_m::Peripherals::take());
+
+    // Enable the modem interrupts
+    info!("Setting up interrupts");
+    unsafe {
+        NVIC::unmask(pac::Interrupt::EGU1);
+        NVIC::unmask(pac::Interrupt::IPC);
+        cp.NVIC.set_priority(pac::Interrupt::EGU1, 4 << 5);
+        cp.NVIC.set_priority(pac::Interrupt::IPC, 0 << 5);
+    }
 
     // Initialize cellular modem
     unwrap!(
@@ -118,4 +112,20 @@ async fn run() -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+// Interrupt Handler for LTE related hardware. Defer straight to the library.
+#[interrupt]
+#[allow(non_snake_case)]
+fn EGU1() {
+    nrf_modem::application_irq_handler();
+    cortex_m::asm::sev();
+}
+
+// Interrupt Handler for LTE related hardware. Defer straight to the library.
+#[interrupt]
+#[allow(non_snake_case)]
+fn IPC() {
+    nrf_modem::ipc_irq_handler();
+    cortex_m::asm::sev();
 }
