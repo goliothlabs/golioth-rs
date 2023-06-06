@@ -118,6 +118,7 @@ async fn run() -> Result<(), Error> {
             golioth.lightdb_write(State, "led", &led).await?;
         }
 
+
         // wait for next tick event with low power sleep
         info!("Go to sleep");
         ticker.next().await;
