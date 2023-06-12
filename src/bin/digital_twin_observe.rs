@@ -92,37 +92,12 @@ async fn run() -> Result<(), Error> {
     info!("Writing to LightDB State");
     golioth.lightdb_write(State, "led", &led).await?;
 
-    Timer::after(Duration::from_millis(500)).await;
+    todo!();
 
-    let digital_twin: Led = golioth.lightdb_read(State, "led").await?;
-    info!("state read: {}", &digital_twin);
+    // wait for next tick event with low power sleep
+    info!("Go to sleep");
+    ticker.next().await;
 
-    // loop 3 times
-    for _ in 0..3 {
-        // Read the state of our device as it exists in the cloud
-        info!("Reading LightDB State");
-        let desired: bool = golioth.lightdb_read(State, "led/desired").await?;
-        info!("state read: {}", &desired);
-
-        // If our desired state does not match our current state, update state
-        if desired != led.blue {
-            match desired {
-                true => blue.set_low(),
-                false => blue.set_high(),
-            }
-            led.blue = desired;
-            // toggle our desired state so that we can demonstrate the updates
-            led.desired = !desired;
-
-            // write state change to Golioth
-            golioth.lightdb_write(State, "led", &led).await?;
-        }
-
-
-        // wait for next tick event with low power sleep
-        info!("Go to sleep");
-        ticker.next().await;
-    }
 
     Ok(())
 }

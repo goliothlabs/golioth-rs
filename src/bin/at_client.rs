@@ -7,7 +7,7 @@ use defmt::unwrap;
 use embassy_executor::Spawner;
 use embassy_nrf::{bind_interrupts, interrupt, pac, peripherals, uarte};
 use golioth_rs as _;
-use nrf_modem::{send_at_bytes, ConnectionPreference, SystemMode, nrfxlib_sys};
+use nrf_modem::{send_at_bytes, ConnectionPreference, SystemMode};
 
 bind_interrupts!(struct Irqs {
     UARTE0_SPIM0_SPIS0_TWIM0_TWIS0 => uarte::InterruptHandler<peripherals::SERIAL0>;
