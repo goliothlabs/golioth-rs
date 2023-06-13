@@ -98,7 +98,6 @@ async fn run() -> Result<(), Error> {
     info!("Go to sleep");
     ticker.next().await;
 
-
     Ok(())
 }
 

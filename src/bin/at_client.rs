@@ -40,18 +40,9 @@ async fn run() -> ! {
     // Icarus    P0_06     P0_09      0
     // Thingy    P0_19     P0_18      0
     // 91 DK     P0_??     P0_??      0
-    let uart = uarte::Uarte::new(
-        p.SERIAL0,
-        Irqs,
-        p.P0_05,
-        p.P0_06, config
-    );
+    let uart = uarte::Uarte::new(p.SERIAL0, Irqs, p.P0_05, p.P0_06, config);
 
-    let (mut tx, mut rx) = uart.split_with_idle(
-        p.TIMER0,
-        p.PPI_CH0,
-        p.PPI_CH1
-    );
+    let (mut tx, mut rx) = uart.split_with_idle(p.TIMER0, p.PPI_CH0, p.PPI_CH1);
 
     // Initialize cellular modem with system mode options
     nrf_modem::init(SystemMode {

@@ -21,11 +21,20 @@ Insert your device's Golioth PSK ID and PSK in the [src/config.rs] file.
 
 #### 1. `Clang` and `GCC ARM Toolchain`:
 Nordic's nrfxlib is written in C, we need Clang and the ARM GCC toolchain for generating bindings
+
+Unix
 ```console
 $ sudo apt install llvm-dev libclang-dev clang
 $ sudo apt install gcc-arm-none-eabi
 ```
 
+Windows
+
+Download and install [GCC toolchain] and [LLVM-Clang], then make sure they are in the `Path` environment variable.  You can test this by running these commands.
+```console
+$ arm-none-eabi-gcc --version
+$ clang --version
+```
 #### 2. `flip-link`:
 This flips the stack for overflow protection
 ```console
@@ -40,12 +49,8 @@ Install [probe-run] which is used for the project runner in [.cargo/config.toml]
 $ cargo install probe-run
 ```
 
-#### 4. Set compiler default to nightly
-Nightly is required in order to set up an alloc error handler and for Embassy.
-
-```console
-$ rustup override set nightly
-```
+#### 4. Use the current official nightly compiler for Embassy
+Nightly is required in order to set up an alloc error handler and for Embassy.  This is handled in `rust-toolchain.toml`
 
 #### 5. Install the correct target
 
@@ -80,6 +85,8 @@ If you are using [rust-analyzer] with VS Code for IDE-like features you can add 
 ```
 [Embassy]: https://github.com/embassy-rs/embassy
 [nrf-modem]: https://docs.rs/nrf-modem/0.2.0/nrf_modem/
+[GCC Toolchain]: https://developer.arm.com/downloads/-/gnu-rm
+[LLVM-Clang]: https://github.com/llvm/llvm-project/releases/tag/llvmorg-16.0.0
 [probe-run]: https://crates.io/crates/probe-run
 [RA docs]: https://rust-analyzer.github.io/manual.html#configuration
 [rust-analyzer]: https://rust-analyzer.github.io/
