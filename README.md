@@ -49,16 +49,22 @@ Install [probe-run] which is used for the project runner in [.cargo/config.toml]
 $ cargo install probe-run
 ```
 
-#### 4. Use the current official nightly compiler for Embassy
+#### 4. Install [llvm-tools] 
+
+```console
+$ rustup component add llvm-tools-preview
+```
+
+#### 5. Use the current official nightly compiler for Embassy
 Nightly is required in order to set up an alloc error handler and for Embassy.  This is handled in `rust-toolchain.toml`
 
-#### 5. Install the correct target
+#### 6. Install the correct target
 
 ```console
 $ rustup target add thumbv8m.main-none-eabi 
 ```
 
-#### 6. Run!
+#### 7. Run!
 Build profiles, such as `release`, can be configured in [Cargo.toml]
 ```console
 $ cargo run --bin sensor_stream
@@ -71,7 +77,7 @@ $ cargo run --release --bin sensor_stream
 ```
 #
 
-#### 7. OPTIONAL Set `rust-analyzer.linkedProjects`
+#### 8. OPTIONAL Set `rust-analyzer.linkedProjects`
 
 If you are using [rust-analyzer] with VS Code for IDE-like features you can add following configuration to your `.vscode/settings.json` to make it work transparently across workspaces. Find the details of this option in the [RA docs].
 
@@ -87,6 +93,7 @@ If you are using [rust-analyzer] with VS Code for IDE-like features you can add 
 [nrf-modem]: https://docs.rs/nrf-modem/0.2.0/nrf_modem/
 [GCC Toolchain]: https://developer.arm.com/downloads/-/gnu-rm
 [LLVM-Clang]: https://github.com/llvm/llvm-project/releases/tag/llvmorg-16.0.0
+[llvm-tools-preview]: https
 [probe-run]: https://crates.io/crates/probe-run
 [RA docs]: https://rust-analyzer.github.io/manual.html#configuration
 [rust-analyzer]: https://rust-analyzer.github.io/
