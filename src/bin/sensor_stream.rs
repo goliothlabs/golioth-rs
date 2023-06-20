@@ -72,7 +72,7 @@ async fn run() -> Result<(), Error> {
 
     // Place PSK authentication items in modem for DTLS
     info!("Uploading PSK ID and Key");
-    keys::install_psk_id_and_psk().await?;
+    // keys::install_psk_id_and_psk().await?;
 
     // Structure holding our DTLS socket to Golioth Cloud
     info!("Creating DTLS Socket to golioth.io");

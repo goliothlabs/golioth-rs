@@ -10,18 +10,22 @@ pub mod errors;
 pub mod heap;
 pub mod keys;
 pub mod utils;
+// pub mod ffi;
 
 use crate::config::{GOLIOTH_SERVER_PORT, GOLIOTH_SERVER_URL, SECURITY_TAG};
 use crate::errors::Error;
 use alloc::format;
 use alloc::string::String;
+use alloc::vec::Vec;
 use at_commands::parser::CommandParser;
 use coap_lite::MessageType::NonConfirmable;
 use coap_lite::{CoapRequest, ContentFormat, Packet, RequestType};
 use core::str;
 use core::sync::atomic::{AtomicU16, Ordering};
-use defmt::debug;
+use defmt::{debug, Debug2Format};
 use defmt_rtt as _;
+use embassy_time::{with_timeout, Duration};
+use nanorand::{Rng, WyRand};
 use nrf_modem::{DtlsSocket, PeerVerification};
 use panic_probe as _;
 use serde::de::DeserializeOwned;
@@ -63,6 +67,28 @@ impl Golioth {
         Ok(Self { socket })
     }
 
+    async fn handle_response<T: DeserializeOwned>(
+        &mut self,
+        request: CoapRequest<DtlsSocket>,
+    ) -> Result<T, Error> {
+        let mut buf = [0; 1024];
+        let request_token = request.message.get_token();
+
+        loop {
+            // receive response
+            let (response, _src_addr) = self.socket.receive_from(&mut buf[..]).await?;
+            let packet = Packet::from_bytes(&response)?;
+            debug!("Response Bytes: {:X}", &response);
+            debug!("Response token: {}", &packet.get_token());
+
+            // make sure the request token matches the response token before returning results
+            if packet.get_token() == request_token {
+                debug!("Token Match!");
+                return Ok(serde_json::from_slice(&packet.payload)?);
+            }
+        }
+    }
+
     // the DeserializeOwned trait is equivalent to the higher-rank trait bound
     // for<'de> Deserialize<'de>. The only difference is DeserializeOwned is more
     // intuitive to read. It means T owns all the data that gets deserialized.
@@ -80,18 +106,12 @@ impl Golioth {
         request
             .message
             .set_content_format(ContentFormat::ApplicationJSON);
+        request.message.set_token(create_token());
 
-        let mut buf = [0; 1024];
         // send request
         self.socket.send(&request.message.to_bytes()?).await?;
 
-        // receive request response
-        let (response, _src_addr) = self.socket.receive_from(&mut buf[..]).await?;
-        debug!("response: {:X}", &response);
-
-        let packet = Packet::from_bytes(&response)?;
-
-        Ok(serde_json::from_slice(&packet.payload)?)
+        with_timeout(Duration::from_secs(2), self.handle_response(request)).await?
     }
 
     pub async fn lightdb_write<T: Serialize>(
@@ -106,6 +126,7 @@ impl Golioth {
         request.set_method(RequestType::Post);
         // Do not ask for a confirmed response
         request.message.header.set_type(NonConfirmable);
+        request.message.set_token(create_token());
 
         let formatted_path = get_formatted_path(write_type, path);
         debug!("set lighdb path: {}", &formatted_path.as_str());
@@ -134,6 +155,19 @@ fn get_formatted_path(db_type: LightDBType, path: &str) -> String {
             format!(".s/{}", path)
         }
     }
+}
+
+// The nRF9160 does not have a RNG peripheral.  To bypass using the Cryptocell C-lib
+// we can just use the current uptime ticks u64 value as a way to create a unique "enough"
+// token as to not be easily spoofed.
+fn create_token() -> Vec<u8> {
+    let seed = embassy_time::Instant::now().as_ticks();
+    let mut rng = WyRand::new_seed(seed);
+    let token = rng.generate::<u64>().to_ne_bytes().to_vec();
+
+    debug!("WyRand Request Token: {}", Debug2Format(&token));
+
+    token
 }
 
 pub async fn get_signal_strength() -> Result<i32, Error> {
