@@ -108,10 +108,10 @@ async fn run() -> Result<(), Error> {
         // get signal strength during transmission
         sensor.meta.signal = get_signal_strength().await?;
 
-        Timer::after(Duration::from_millis(500)).await;
+        Timer::after(Duration::from_millis(1000)).await;
     }
 
-    Ok(())
+    exit()
 }
 
 // Interrupt Handler for LTE related hardware. Defer straight to the library.

@@ -10,7 +10,7 @@ default = ["nightly"]
 nightly = ["embassy-executor/nightly", "embassy-nrf/nightly", "embassy-nrf/unstable-traits"]
 
 [dependencies]
-alloc-cortex-m = "0.4.4"
+embedded-alloc = "0.5.0"
 at-commands = "0.5.2"
 coap-lite = { version = "0.11.2", default-features = false }
 cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }

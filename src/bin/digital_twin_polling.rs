@@ -30,7 +30,10 @@ async fn main(_spawner: Spawner) {
 
     // Run the sample program, will not return unless an error occurs
     match run().await {
-        Ok(()) => info!("Program complete!"),
+        Ok(()) => {
+            info!("Program complete!");
+            exit();
+        },
         Err(e) => {
             // If we get here, we have problems
             error!("app exited: {:?}", defmt::Debug2Format(&e));
@@ -82,7 +85,7 @@ async fn run() -> Result<(), Error> {
 
     // Place PSK authentication items in modem for DTLS
     info!("Uploading PSK ID and Key");
-    keys::install_psk_id_and_psk().await?;
+    // keys::install_psk_id_and_psk().await?;
 
     // Structure holding our DTLS socket to Golioth Cloud
     info!("Creating DTLS Socket to golioth.io");
@@ -110,9 +113,9 @@ async fn run() -> Result<(), Error> {
                 true => blue.set_low(),
                 false => blue.set_high(),
             }
-            led.blue = desired;
+            led.blue = desired.clone();
             // toggle our desired state so that we can demonstrate the updates
-            led.desired = !desired;
+            led.desired = !desired.clone();
 
             // write state change to Golioth
             golioth.lightdb_write(State, "led", &led).await?;

@@ -111,7 +111,7 @@ impl Golioth {
         // send request
         self.socket.send(&request.message.to_bytes()?).await?;
 
-        with_timeout(Duration::from_secs(2), self.handle_response(request)).await?
+        with_timeout(Duration::from_secs(15), self.handle_response(request)).await?
     }
 
     pub async fn lightdb_write<T: Serialize>(
@@ -188,4 +188,11 @@ pub async fn get_signal_strength() -> Result<i32, Error> {
         signal += -140;
     }
     Ok(signal)
+}
+
+/// Terminates the application and makes `probe-run` exit with exit-code = 0
+pub fn exit() -> ! {
+    loop {
+        cortex_m::asm::bkpt();
+    }
 }
