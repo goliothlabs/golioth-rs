@@ -93,7 +93,7 @@ async fn run() -> ! {
     //         }
     //         None => {}
     //     }
-    }
+    // }
 }
 
 // Interrupt Handler for LTE related hardware. Defer straight to the library.
