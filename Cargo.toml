@@ -7,7 +7,7 @@ resolver = "2"
 
 [features]
 default = ["nightly"]
-nightly = ["embassy-executor/nightly", "embassy-nrf/nightly", "embassy-nrf/unstable-traits"]
+nightly = ["embassy-executor/nightly", "embassy-nrf/nightly", "embassy-nrf/unstable-traits","embedded-io-async",]
 
 [dependencies]
 embedded-alloc = "0.5.0"
@@ -22,6 +22,7 @@ embassy-sync = { version = "0.1", features = ["defmt"] }
 embassy-executor = { version = "0.2", features = ["defmt", "integrated-timers", "arch-cortex-m", "executor-thread"] }
 embassy-time = { version = "0.1", features = ["defmt", "defmt-timestamp-uptime"] }
 embassy-nrf = { version = "0", features = ["nrf9160-ns", "unstable-pac", "time-driver-rtc1", "defmt", "unstable-traits", "time", "gpiote"] }
+embedded-io-async = { version = "0.5.0", optional = true, features = ["defmt-03"] }
 futures = { version = "0.3.26", default-features = false, features = ["async-await"] }
 heapless = { version = "0.7.16" }
 nanorand = { version = "0.7.0",  default-features = false, features = ["wyrand"] }
