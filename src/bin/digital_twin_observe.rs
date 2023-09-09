@@ -49,9 +49,7 @@ async fn run() -> Result<(), Error> {
     // Enable the modem interrupts
     info!("Setting up interrupts");
     unsafe {
-        NVIC::unmask(pac::Interrupt::EGU1);
         NVIC::unmask(pac::Interrupt::IPC);
-        cp.NVIC.set_priority(pac::Interrupt::EGU1, 4 << 5);
         cp.NVIC.set_priority(pac::Interrupt::IPC, 0 << 5);
     }
     // P0_03 -> Blue LED on Conexio Stratus Dev Kit
@@ -99,14 +97,6 @@ async fn run() -> Result<(), Error> {
     ticker.next().await;
 
     Ok(())
-}
-
-// Interrupt Handler for LTE related hardware. Defer straight to the library.
-#[interrupt]
-#[allow(non_snake_case)]
-fn EGU1() {
-    nrf_modem::application_irq_handler();
-    cortex_m::asm::sev();
 }
 
 // Interrupt Handler for LTE related hardware. Defer straight to the library.

@@ -14,6 +14,7 @@ runner = "probe-run --chip nRF9160_xxAA"
 [env]
 # `cargo clean -p defmt` after you change this
 DEFMT_LOG = "debug"
+MODEM_TRACE_LEVEL = "ip-lte"
 
 [build]
 target = "thumbv8m.main-none-eabihf" # Cortex-M33 (with FPU)

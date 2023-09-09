@@ -27,9 +27,7 @@ async fn run() -> ! {
 
     // Enable the modem interrupts
     unsafe {
-        NVIC::unmask(pac::Interrupt::EGU1);
         NVIC::unmask(pac::Interrupt::IPC);
-        cp.NVIC.set_priority(pac::Interrupt::EGU1, 4 << 5);
         cp.NVIC.set_priority(pac::Interrupt::IPC, 0 << 5);
     }
 
@@ -94,14 +92,6 @@ async fn run() -> ! {
     //         None => {}
     //     }
     // }
-}
-
-// Interrupt Handler for LTE related hardware. Defer straight to the library.
-#[interrupt]
-#[allow(non_snake_case)]
-fn EGU1() {
-    nrf_modem::application_irq_handler();
-    cortex_m::asm::sev();
 }
 
 // Interrupt Handler for LTE related hardware. Defer straight to the library.
