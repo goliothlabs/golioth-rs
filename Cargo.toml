@@ -2,12 +2,8 @@
 authors = ["Daniel Hayes <dkhayes117@annealed-engineering.com>, Lachlan Sneff <lachlan.sneff@gmail.com>"]
 name = "golioth-rs"
 edition = "2021"
-version = "0.2.0"
+version = "0.2.1"
 resolver = "2"
-
-#[features]
-#default = ["nightly"]
-#nightly = ["embassy-executor/nightly", "embassy-nrf/nightly", "embassy-nrf/unstable-traits","embedded-io-async",]
 
 [dependencies]
 embedded-alloc = "0.5.1"
