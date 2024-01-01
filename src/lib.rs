@@ -1,6 +1,5 @@
 #![no_main]
 #![no_std]
-#![feature(alloc_error_handler)]
 
 extern crate alloc;
 extern crate tinyrlibc;

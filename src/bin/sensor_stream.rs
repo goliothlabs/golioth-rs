@@ -1,6 +1,5 @@
 #![no_std]
 #![no_main]
-#![feature(type_alias_impl_trait)]
 
 use cortex_m::peripheral::NVIC;
 use defmt::{error, info, unwrap, Format};
@@ -117,5 +116,5 @@ async fn run() -> Result<(), Error> {
 #[allow(non_snake_case)]
 fn IPC() {
     nrf_modem::ipc_irq_handler();
-    cortex_m::asm::sev();
+    // cortex_m::asm::sev();
 }

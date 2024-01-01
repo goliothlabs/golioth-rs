@@ -1,5 +1,5 @@
 [target.'cfg(all(target_arch = "arm", target_os = "none"))']
-runner = "probe-run --chip nRF9160_xxAA"
+runner = "probe-rs run --chip nRF9160_xxAA"
 
 # These are implemented in build.rs, but can be implemented here as well
 #rustflags = [

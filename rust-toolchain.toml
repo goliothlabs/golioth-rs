@@ -1,5 +1,5 @@
 [toolchain]
 # Channel should match https://github.com/embassy-rs/embassy/blob/main/rust-toolchain.toml#L4
-channel = "nightly-2023-06-28"
+channel = "1.75"
 components = [ "rustfmt", "llvm-tools-preview" ]
 targets = [ "thumbv8m.main-none-eabihf" ]

@@ -5,28 +5,30 @@ edition = "2021"
 version = "0.2.0"
 resolver = "2"
 
-[features]
-default = ["nightly"]
-nightly = ["embassy-executor/nightly", "embassy-nrf/nightly", "embassy-nrf/unstable-traits","embedded-io-async",]
+#[features]
+#default = ["nightly"]
+#nightly = ["embassy-executor/nightly", "embassy-nrf/nightly", "embassy-nrf/unstable-traits","embedded-io-async",]
 
 [dependencies]
-embedded-alloc = "0.5.0"
-at-commands = "0.5.2"
-coap-lite = { version = "0.11.2", default-features = false }
+embedded-alloc = "0.5.1"
+at-commands = "0.5.4"
+coap-lite = { version = "0.11.3", default-features = false }
 cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7.3"
-defmt = "0.3.2"
+defmt = "0.3.5"
 defmt-rtt = "0.4.0"
 embassy-futures = { version = "0.1"}
-embassy-sync = { version = "0.1", features = ["defmt"] }
-embassy-executor = { version = "0.2", features = ["defmt", "integrated-timers", "arch-cortex-m", "executor-thread"] }
-embassy-time = { version = "0.1", features = ["defmt", "defmt-timestamp-uptime"] }
-embassy-nrf = { version = "0", features = ["nrf9160-ns", "unstable-pac", "time-driver-rtc1", "defmt", "unstable-traits", "time", "gpiote"] }
-embedded-io-async = { version = "0.5.0", optional = true, features = ["defmt-03"] }
-futures = { version = "0.3.26", default-features = false, features = ["async-await"] }
-heapless = { version = "0.7.16" }
+embassy-sync = { version = "0.5", features = ["defmt"] }
+embassy-executor = { version = "0.4", features = ["defmt", "integrated-timers", "arch-cortex-m", "executor-thread"] }
+embassy-time = { version = "0.2", features = ["defmt", "defmt-timestamp-uptime"] }
+embassy-nrf = { version = "0", features = ["nrf9160-ns", "unstable-pac", "time-driver-rtc1", "defmt", "time", "gpiote"] }
+#embedded-hal = { version = "1.0.0-rc.2" }
+#embedded-hal-async = { version = "1.0.0-rc.3" }
+embedded-io-async = { version = "0.6", optional = true, features = ["defmt-03"] }
+futures = { version = "0.3", default-features = false, features = ["async-await"] }
+heapless = { version = "0.8.0" }
 nanorand = { version = "0.7.0",  default-features = false, features = ["wyrand"] }
-nrf-modem = { version = "0.4.0", features = ["defmt"] }
+nrf-modem = { version = "0.4.1", features = ["defmt"] }
 panic-probe = { version = "0.3.0", features = ["print-defmt"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }

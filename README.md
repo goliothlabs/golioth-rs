@@ -1,7 +1,7 @@
 # golioth-rs
 
 An experimental project for using Golioth on the nRF9160 cellular SiP.  This repo is built on the [Embassy]
-async framework and [nrf-modem].  This repo currently requires the nightly compiler.
+async framework and [nrf-modem].  This repo currently requires Rust 1.68 or higher.
 
 # Setup
 
