@@ -3,22 +3,25 @@ use core::{
     sync::atomic::{AtomicBool, Ordering},
 };
 
-use alloc_cortex_m::CortexMHeap;
+use embedded_alloc::Heap;
+
+const HEAP_SIZE: usize = 8192;
 
 #[global_allocator]
-static ALLOCATOR: CortexMHeap = CortexMHeap::empty();
+static HEAP: Heap = Heap::empty();
 
-static mut HEAP_DATA: [MaybeUninit<u8>; 8192] = [MaybeUninit::uninit(); 8192];
+static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
 
 pub fn init() {
     static ONCE: AtomicBool = AtomicBool::new(false);
 
+    // Don't allow init() to be called more than once
     if ONCE
         .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
         .is_ok()
     {
         unsafe {
-            ALLOCATOR.init(HEAP_DATA.as_ptr() as usize, HEAP_DATA.len());
+            HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE);
         }
     }
 }
